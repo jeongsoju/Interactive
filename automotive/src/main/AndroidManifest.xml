@@ -9,6 +9,12 @@
         android:name="android.hardware.type.automotive"
         android:required="true" />
 
+    <!-- spike 실험용 권한 -->
+    <uses-permission android:name="pleos.car.permission.CAR_DRIVE" />
+    <uses-permission android:name="pleos.car.permission.CAR_SEATS" />
+    <uses-permission android:name="pleos.car.permission.CAR_ENERGY" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
     <application
         android:allowBackup="true"
         android:appCategory="audio"
@@ -38,6 +44,17 @@
                 android:name="distractionOptimized"
                 android:value="true" />
         </activity>
+
+        <!-- spike 실험용 화면 (런처에는 안 보이고 adb로만 실행) -->
+        <activity
+            android:name=".spike.SpikeActivity"
+            android:exported="true"
+            android:label="Spike" />
+        <activity
+            android:name=".spike.SpikeLandActivity"
+            android:exported="true"
+            android:label="Spike Land"
+            android:screenOrientation="landscape" />
     </application>
 
 </manifest>
