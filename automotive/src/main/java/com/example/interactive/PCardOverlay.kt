@@ -142,7 +142,7 @@ private fun TripSummary(vm: RecordingEngine) {
     val stops = vm.records.stops.filter { it.tripId == trip.id }
     val parkedMinutes = stops.sumOf { it.stayedMinutes(state.nowMillis) }
     val driveMinutes = ((state.nowMillis - trip.startMillis) / 60_000L - parkedMinutes).coerceAtLeast(0)
-    val fuel = estimateFuelCostWon(distance, AppConfig.DEFAULT_FUEL_EFFICIENCY_KM_PER_LITER, AppConfig.DEFAULT_FUEL_PRICE_WON_PER_LITER)
+    val fuel = estimateFuelCostWon(distance, vm.settings.efficiency, vm.settings.fuelPriceWonPerLiter)
 
     Glass(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(40.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {

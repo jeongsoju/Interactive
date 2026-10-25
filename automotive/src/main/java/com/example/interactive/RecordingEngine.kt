@@ -23,6 +23,7 @@ import com.example.interactive.shared.card.PCardPicker
 import com.example.interactive.shared.card.estimateFuelCostWon
 import com.example.interactive.shared.model.Dong
 import com.example.interactive.shared.model.DongLocator
+import com.example.interactive.shared.model.Settings
 import com.example.interactive.shared.model.Stop
 import com.example.interactive.shared.model.Territory
 import com.example.interactive.shared.record.TerritoryChange
@@ -115,6 +116,20 @@ class RecordingEngine(private val app: Application) {
     fun showDongOnMap(code: String) { focusDong = dongLocator.byCode(code) }
 
     fun clearFocus() { focusDong = null }
+
+
+    private val settingsStore = SettingsStore(app)
+
+    /** 차종·유가·우리 집 동네 (설정 탭). 바꾸면 바로 저장하고 영토를 다시 계산한다 */
+    var settings by mutableStateOf(settingsStore.load())
+        private set
+
+    fun changeSettings(change: Settings.() -> Settings) {
+        val before = settings
+        settings = before.change()
+        settingsStore.save(settings)
+        if (settings.homeDongCode != before.homeDongCode) updateTerritories(state?.nowMillis ?: System.currentTimeMillis())
+    }
 
     var records by mutableStateOf(RecordSnapshot())
         private set
@@ -264,7 +279,7 @@ class RecordingEngine(private val app: Application) {
                 territory = territories.firstOrNull { it.dongCode == stop.dongCode },
                 tripDistanceKm = distance,
                 tripFuelCostWon = estimateFuelCostWon(
-                    distance, AppConfig.DEFAULT_FUEL_EFFICIENCY_KM_PER_LITER, AppConfig.DEFAULT_FUEL_PRICE_WON_PER_LITER
+                    distance, settings.efficiency, settings.fuelPriceWonPerLiter
                 ),
                 friendName = ::friendName,
             )
@@ -274,7 +289,7 @@ class RecordingEngine(private val app: Application) {
     // 내 정차(샘플 지난 여행 + 지금까지 기록)로 내 점수를 구하고, 친구 점수는 샘플 값을 쓴다 (친구는 가짜 데이터)
     private fun updateTerritories(nowMillis: Long): List<TerritoryChange> {
         val myStops = sample.pastTrips.flatMap { it.stops } + recorder.stops
-        val mine = TerritoryScorer.myScores(myStops, nowMillis, homeDongCode = null) // 우리 집 동네는 13단계 설정에서
+        val mine = TerritoryScorer.myScores(myStops, nowMillis, settings.homeDongCode)
         val friends = sample.territories.associate { it.dongCode to it.scores.filterKeys { id -> id != TerritoryScorer.MY_ID } }
         val result = TerritoryScorer.compute(mine, friends, owners)
         territories = result.territories

@@ -133,68 +133,14 @@ private fun ChooserButton(title: String, caption: String, onClick: () -> Unit) {
     }
 }
 
-private val AppMode.label get() = when (this) {
+val AppMode.label get() = when (this) {
     AppMode.REPLAY -> "시연 모드"
     AppMode.MANUAL -> "직접 조작 모드"
     AppMode.REAL -> "실제 차 모드"
 }
 
-// ---- 임시 화면: 지금 차량 값 + 모드별 조작 ----
-
-private val timeFormat = SimpleDateFormat("MM/dd HH:mm:ss", Locale.KOREA)
-
-private val WideScreenWidth = 900.dp
-
-
 @Composable
-fun DebugScreen(vm: RecordingEngine) {
-    val state = vm.state ?: return
-    val spacing = Arrangement.spacedBy(12.dp)
-    val scroll = Modifier.verticalScroll(rememberScrollState())
-
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        if (maxWidth >= WideScreenWidth) {
-            // 가로형: 왼쪽에 값·기록, 오른쪽에 조작 패널을 나란히 둬서 스크롤 없이 다 보이게 한다
-            Row(modifier = Modifier.fillMaxSize().padding(24.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                Column(modifier = Modifier.weight(1f).then(scroll), verticalArrangement = spacing) {
-                    StatusBlock(vm, state)
-                    RecordsBlock(vm, state)
-                    TerritoryBlock(vm)
-                }
-                Column(modifier = Modifier.weight(1f).then(scroll), verticalArrangement = spacing) {
-                    ControlsBlock(vm)
-                }
-            }
-        } else {
-            Column(modifier = Modifier.fillMaxSize().then(scroll).padding(24.dp), verticalArrangement = spacing) {
-                StatusBlock(vm, state)
-                ControlsBlock(vm)
-                RecordsBlock(vm, state)
-                TerritoryBlock(vm)
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatusBlock(vm: RecordingEngine, state: VehicleState) {
-    val sample = vm.sample
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("${vm.mode?.label}", style = MaterialTheme.typography.headlineMedium)
-        OutlinedButton(onClick = vm::showChooser, modifier = Modifier.heightIn(min = ButtonHeight)) {
-            Text("모드 바꾸기")
-        }
-        StateText(state, state.location?.let { vm.dongLocator.find(it)?.name ?: "경계 밖" })
-        Text(
-            "샘플 데이터: 동 ${sample.dongs.size}곳 · 지난 여행 ${sample.pastTrips.size}개 · " +
-                "친구 ${sample.friends.joinToString { it.name }} · 영토 ${sample.territories.size}곳",
-            style = MaterialTheme.typography.bodyMedium,
-        )
-    }
-}
-
-@Composable
-private fun ControlsBlock(vm: RecordingEngine) {
+fun ControlsBlock(vm: RecordingEngine) {
     when (vm.mode) {
         AppMode.REPLAY -> ReplayControls(vm)
         AppMode.MANUAL -> vm.manual()?.let { ManualPanel(it, vm) }
@@ -203,64 +149,6 @@ private fun ControlsBlock(vm: RecordingEngine) {
     }
 }
 
-private val clockFormat = SimpleDateFormat("HH:mm", Locale.KOREA)
-
-// 임시 화면: 지금까지 기록된 여행과 정차
-@Composable
-private fun RecordsBlock(vm: RecordingEngine, state: VehicleState) {
-    val records = vm.records
-    val now = state.nowMillis
-    fun dong(stop: Stop) = stop.dongCode?.let { vm.dongLocator.byCode(it)?.name } ?: if (stop.latitude == null) "위치 없음" else "경계 밖"
-
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("여행 기록", style = MaterialTheme.typography.titleLarge)
-        val trip = records.trips.lastOrNull()
-        Text(
-            if (trip == null) "여행 없음 (첫 D를 기다리는 중)"
-            else "여행 ${records.trips.size}개 · " + (if (trip.endMillis == null) "진행 중" else "끝남") +
-                " · 거리 %.1f km".format(trip.distanceKm(state.odometerKm)) +
-                " · 체류 ${records.stops.size}곳 · 버려진 정차 ${records.discarded.size}곳",
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        records.stops.forEach { stop ->
-            val status = when {
-                stop.endMillis == null && stop.isStay(now) -> "체류 확정 (아직 머무는 중)"
-                stop.endMillis == null -> "정차 중 ${stop.stayedMinutes(now)}분"
-                else -> "체류 ${stop.stayedMinutes(now)}분"
-            }
-            Text("• ${dong(stop)} ${clockFormat.format(Date(stop.startMillis))} · $status", style = MaterialTheme.typography.bodyLarge)
-        }
-        records.discarded.forEach { stop ->
-            Text(
-                "• ${dong(stop)} ${clockFormat.format(Date(stop.startMillis))} · 잠깐 멈춤 ${stop.stayedMinutes(now)}분 (버림)",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun StateText(state: VehicleState, dongName: String?) {
-    val gearText = when (state.gear) {
-        Gear.P -> "P (주차)"
-        Gear.R -> "R (후진)"
-        Gear.N -> "N (중립)"
-        Gear.D -> "D (주행)"
-    }
-    val loc = state.location
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("기어  $gearText", style = MaterialTheme.typography.titleLarge)
-        Text(
-            "위치  ${loc?.let { "%.4f, %.4f".format(it.latitude, it.longitude) } ?: "없음"}" +
-                (dongName?.let { "  ($it)" } ?: ""),
-            style = MaterialTheme.typography.titleLarge,
-        )
-        Text("주행거리  %.1f km".format(state.odometerKm), style = MaterialTheme.typography.titleLarge)
-        Text("탑승 인원  ${state.occupants}명", style = MaterialTheme.typography.titleLarge)
-        Text("앱 시각  ${timeFormat.format(Date(state.nowMillis))}", style = MaterialTheme.typography.titleLarge)
-    }
-}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -340,30 +228,5 @@ private fun RealStatus(real: RealVehicleDataSource) {
         Text("실제 차 연결 상태", style = MaterialTheme.typography.titleLarge)
         Text("주행 규제: ${if (real.uxRestricted) "켜짐(주행 중)" else "꺼짐"}", style = MaterialTheme.typography.bodyLarge)
         real.notes.forEach { Text("· $it", style = MaterialTheme.typography.bodyMedium) }
-    }
-}
-
-// 임시 화면: 동마다 주인과 내 점수 (체류가 확정될 때마다 바뀐다)
-@Composable
-private fun TerritoryBlock(vm: RecordingEngine) {
-    fun dongName(code: String) = vm.dongLocator.byCode(code)?.name ?: code
-    fun person(id: String?) = when (id) {
-        null -> "주인 없음"
-        TerritoryScorer.MY_ID -> "내 땅"
-        else -> vm.sample.friends.firstOrNull { it.id == id }?.name?.let { "$it 땅" } ?: id
-    }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("영토", style = MaterialTheme.typography.headlineSmall)
-        if (vm.territories.isEmpty()) Text("아직 없음", style = MaterialTheme.typography.bodyLarge)
-        vm.territories.forEach { t ->
-            val mine = t.scores[TerritoryScorer.MY_ID] ?: 0
-            Text("• ${dongName(t.dongCode)} · ${person(t.ownerId)} · 내 점수 $mine", style = MaterialTheme.typography.bodyLarge)
-        }
-        vm.territoryChanges.forEach { c ->
-            Text(
-                "변화: ${dongName(c.dongCode)} ${person(c.previousOwnerId)} → ${person(c.newOwnerId)}",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
     }
 }

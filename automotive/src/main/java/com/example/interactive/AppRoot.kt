@@ -48,14 +48,14 @@ private enum class Tab(val label: String, val icon: TabIcon) {
     MAP("지도", TabIcon.MAP),
     RECORDS("기록", TabIcon.RECORDS),
     TERRITORY("영토", TabIcon.TERRITORY),
-    DEV("개발", TabIcon.DEV), // 임시: 모드 바꾸기·직접 조작 패널. 13단계 설정 탭으로 옮기면 없앤다
+    SETTINGS("설정", TabIcon.SETTINGS),
 }
 
 private val WideScreenWidth = 900.dp
 
 /**
  * 화면 뼈대 (docs/design/README.md 구조): 지도가 전체를 채우고, 카드·칩·범례·탭 막대가 위에 떠 있다.
- * 탭 4개(지도·기록·영토·설정)는 12~14단계에서 채운다. 지금은 지도·기록과 임시 "개발" 탭이 있다.
+ * 탭 4개: 지도·기록·영토·설정.
  */
 @Composable
 fun AppRoot(vm: RecordingEngine) {
@@ -81,7 +81,10 @@ fun AppRoot(vm: RecordingEngine) {
                 MapScreen(vm, null, wide)
                 TerritoryPanel(vm, wide)
             }
-            Tab.DEV -> Box(modifier = Modifier.fillMaxSize().padding(bottom = 120.dp)) { DebugScreen(vm) }
+            Tab.SETTINGS -> {
+                MapScreen(vm, null, wide)
+                SettingsPanel(vm, wide)
+            }
         }
         TabBar(tab, wide, onSelect = { tab = it }, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
     }

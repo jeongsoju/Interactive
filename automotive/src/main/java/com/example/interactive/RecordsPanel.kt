@@ -142,7 +142,7 @@ private fun tripMeta(vm: RecordingEngine, entry: TripEntry, withStops: Boolean):
     val nowMillis = vm.state?.nowMillis ?: trip.startMillis
     val distance = if (entry.live) trip.distanceKm(vm.state?.odometerKm) else trip.distanceKm()
     val fuel = trip.fuelCostWon ?: estimateFuelCostWon(
-        distance, AppConfig.DEFAULT_FUEL_EFFICIENCY_KM_PER_LITER, AppConfig.DEFAULT_FUEL_PRICE_WON_PER_LITER
+        distance, vm.settings.efficiency, vm.settings.fuelPriceWonPerLiter
     )
     val time = "${timeFormat.format(Date(trip.startMillis))} – " +
         if (entry.live) "지금" else timeFormat.format(Date(trip.endMillis ?: nowMillis))
