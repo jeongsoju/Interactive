@@ -9,7 +9,7 @@
 | 단계 | 할 일 | 확인 방법 | 상태 | 브랜치·커밋 |
 | --- | --- | --- | --- | --- |
 | 1 | 설정 상수 + 데이터 모델(Trip·Stop·Territory·Settings) | 단위 테스트 | 완료 | feature/config-models 4b79e81 |
-| 2 | VehicleDataSource 틀(현재 시각 포함) + Replay(시연 모드, 1/10/60배) + Manual(직접 조작 모드, 접이식 패널) + 모드 선택창·모드 기억 + 샘플 데이터 JSON(assets/sample_data.json, 읽기만) | 화면에서 기어·위치·시각 변화 캡처 3장(docs/screenshots) | 완료 | feature/vehicle-data a6be8aa |
+| 2 | VehicleDataSource 틀(현재 시각 포함) + Replay(시연 모드, 1/10/60배) + Manual(직접 조작 모드, 접이식 패널) + 모드 선택창·모드 기억 + 샘플 데이터 JSON(assets/sample_data.json, 읽기만) | 화면에서 기어·위치·시각 변화 캡처 3장(docs/screenshots) | 완료 | feature/vehicle-data 5f963eb |
 | 3 | 여행 기록 규칙(P/D 전환, 10분 체류, 3시간 여행 끝) | 단위 테스트 + Replay | 대기 | |
 | 4 | 기기 안 저장(Room, 승인됨) | 앱 껐다 켜도 기록 유지 | 대기 | |
 | 5 | 백그라운드 기록 서비스 | D에서 화면 가려져도 기록 계속 | 대기 | |
