@@ -85,6 +85,30 @@ vehicle.release()
 - **에뮬레이터에서는 연비·전비를 읽을 수 없다.** 연료비 카드는 Replay 데이터(가짜 여행)나 "거리 × 단가" 계산으로 만들어야 한다.
 - 실제 차에서도 차종마다 다르므로 반드시 `check...Capabilities`로 먼저 확인한다.
 
+### 실제 차(그랜저·아반떼)에서 Fuel 값이 나올까? (2026-10-25 조사)
+- **공식 문서에는 차종별 지원표가 없다.**
+  - API 호환성 문서: "Vehicle SDK는 차종에 따라 가용성이 다르며 `checkXXXCapabilities`로 확인"
+  - Vehicle Data API 호환성 페이지(클라우드 API용)도 차종 이름 없이 "차종에 따라 다르다"고만 적혀 있다.
+  - 확인한 문서: https://document.pleos.ai/docs/pleos-only/vehicle-app-planning-guide/api-compatibility-availability , https://document.pleos.ai/api-reference/vehicle-data-api/api-compatibility
+- 공개 보도로는 Pleos Connect가 **더 뉴 그랜저에 처음 탑재**됐고, **디 올 뉴 아반떼**에도 들어간다(14.6″/12.9″ 화면). 둘 다 내연기관·하이브리드 모델이 있으므로 Fuel 도메인이 지원될 **가능성은 있다**. 다만 **문서로 확인된 것은 아니다.**
+  - [현대차그룹 보도자료](https://www.hyundaimotorgroup.com/ko/news/hyundai-motor-group-redefines-in-vehicle-experience-with-pleos-connect-next-generation-infotainment-system), [OSEN 아반떼 기사](https://osen.co.kr/article/G1112829022)
+- → **설명회 질문 목록**: "그랜저·아반떼 실차에서 Fuel(`getCurrentFuelEconomy`, `getFuelPercent`)과 Odometer 트립 값이 지원되는지, 차종별 지원표가 있는지"
+
+### 연료비 추정 대안 (Fuel 값이 없을 때)
+우선순위대로 시도하고, 실패하면 다음 방법으로 넘어간다(fallback).
+
+| 순위 | 방법 | 필요한 값 | 상태 |
+|---|---|---|---|
+| 1 | 차가 주는 평균 연비로 계산: `거리 ÷ 연비(km/L) × 유가` | Fuel `getCurrentFuelEconomy` 또는 `getSinceChargeFuelEconomy` | 실차 지원 시 |
+| 2 | 연료량 차이로 계산: `(출발 연료% − 도착 연료%) × 탱크 용량 × 유가` | `getFuelPercent` + 탱크 용량(사용자 설정) | 주유하면 계산이 틀어짐 |
+| 3 | **공인 복합연비로 계산: `거리 ÷ 공인연비 × 유가`** | 누적 주행거리 차이(✅ 에뮬레이터에서 읽힘) + 차종 공인연비(설정 화면에서 선택, 예: 그랜저 2.5 가솔린) | **에뮬레이터·시연에서 바로 가능 → 기본안 추천** |
+| 4 | GPS 경로 길이로 거리 대신 | 위치 기록 | 주행거리 값도 없을 때 |
+| EV | `(출발 SoC − 도착 SoC) × 배터리 용량(kWh) × 전기 단가` | `getEvBatteryStateOfCharge`(✅ 읽힘) | 에뮬레이터 차량용 |
+
+- **유가**: 기본값을 앱에 넣고 설정에서 바꿀 수 있게 한다. 실시간 유가가 필요하면 한국석유공사 **오피넷 API**를 쓸 수 있지만, **회원가입과 API 키가 필요하다** → 쓰기 전에 사용자 승인을 받는다.
+- **표시 문구**: 실제 측정값이 아니면 "약 4만 2천 원 (추정)"처럼 **추정임을 표시**한다.
+- **시연**: Replay 데이터에 거리·연비를 넣어 두면 화면은 항상 같은 값으로 재현된다.
+
 ## 4. 주행거리
 | 함수 | 결과 |
 |---|---|

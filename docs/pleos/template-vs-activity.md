@@ -35,13 +35,33 @@
 - 실측 규제 값: parked `0x0`, idling·moving `0x50` (영상 금지 `NO_VIDEO` + 설정 금지 `NO_SETUP`). 기어 D에서 정차 중(idling)이어도 규제가 걸린다
 - 여행 **기록**은 화면이 아니라 백그라운드(Foreground Service)에서 해야 한다. 화면이 가려져도 기록은 계속되어야 하기 때문이다
 
-## 바꾸는 방법 (승인 후 진행할 계획)
-1. `automotive` 모듈에 Compose 설정 추가 (`libs.versions.toml`에 이미 compose 항목이 있음)
-2. `MainActivity`(ComponentActivity + Compose) 만들고 런처로 지정
-3. 매니페스트 정리
-   - `CarAppActivity`, `templates_host` uses-feature, `com.android.automotive` 메타데이터의 템플릿 설정 제거
-   - `android.hardware.type.automotive`는 유지
-   - DO는 A안이면 선언하지 않는다
-4. `shared` 모듈의 `MyCarApp*` 3개 파일은 삭제한다. 공용 코드(데이터 모델, `VehicleDataSource`) 자리로 바꾼다
-5. 빌드 → 설치 → P/D 전환하며 캡처 확인
-6. 이 과정에서 `appCategory="audio"`(템플릿 기본값)도 맞는 값으로 바꿔야 한다
+## 전환 계획 (2026-10-25 작성, 승인 전에는 실행하지 않음)
+
+### 어디서 할까 → **main에서 새 브랜치 `feature/activity-ui`를 만들어서** (추천)
+- main에서 바로 하지 않는 이유: 앱 뼈대를 통째로 바꾸는 큰 작업이다. 중간에 빌드가 깨져도 main은 항상 "설치되는 APK" 상태로 남아야 한다. 11/14 제출 전까지 안전장치가 된다.
+- spike에서 하지 않는 이유: spike에는 실험 화면·실험 권한·MapLibre가 섞여 있다. 본 코드에 실험 흔적이 들어가면 나중에 정리가 어렵다. spike는 참고용으로만 두고, 필요한 코드(기어 읽기, 지도 설정)는 **옮겨 적는다**.
+- 끝나면 확인 → 사용자 승인 → main에 합치기(merge)
+- 참고: 로컬 main에는 GitHub에 아직 올리지 않은 커밋 1개(`269eb1f` 문서)가 있다. 브랜치를 만들기 전에 main부터 push할지 정한다.
+
+### 바꿀 파일과 내용
+| 단계 | 파일 | 내용 |
+|---|---|---|
+| 1 | `gradle/libs.versions.toml`, `automotive/build.gradle.kts` | Compose 켜기(이미 버전 항목 있음: compose BOM, material3, activity-compose). `kotlin-compose` 플러그인 적용. `androidx.car.app:app-automotive` 제거 |
+| 2 | `automotive/.../MainActivity.kt` (새 파일) | `ComponentActivity` + Compose 화면. 우선 "Interactive" 제목과 기어 상태 글자만 있는 빈 화면 |
+| 3 | `automotive/src/main/AndroidManifest.xml` | `CarAppActivity` 삭제 → `MainActivity`를 런처로. `android.software.car.templates_host` uses-feature 삭제. `appCategory="audio"` 삭제(템플릿 기본값, 우리 앱과 무관). `android.hardware.type.automotive`는 유지. **DO(`distractionOptimized`)는 선언하지 않음**(A안: 주행 중 시스템이 화면을 가림) |
+| 4 | `shared/` | `MyCarAppService`·`MyCarAppSession`·`MyCarAppScreen`, `automotive_app_desc.xml`(template 사용 선언), 매니페스트의 CarAppService 등록 삭제. `androidx.car.app:app` 의존성 제거. 빈 공용 모듈로 두고 나중에 `Trip`/`Stop`/`Territory` 모델과 `VehicleDataSource`를 넣을 자리로 쓴다 |
+| 5 | `mobile/build.gradle` | `androidx.car.app:app-projected`(안드로이드 오토용) 제거. mobile은 일반 폰 앱(여행 영상)이 될 예정이라 필요 없다 |
+| 6 | `automotive/src/main/res/values/themes.xml` | 라이트/다크 둘 다 되는 기본 테마 |
+
+### 이번 전환에 넣지 않는 것 (다음 작업으로)
+- 지도, 기어 읽기, P 카드, Vehicle SDK 연결 → 뼈대 전환이 확인된 뒤 하나씩 추가 (CLAUDE.md "한 번에 하나의 작은 기능")
+
+### 확인 방법
+1. 빌드 → 에뮬레이터 설치 → 런처에서 앱 실행 → 캡처: Compose 화면이 1682×1210 창에 뜨는지
+2. Virtual Console에서 기어 D → 캡처: "주행 중에는 사용할 수 없습니다."로 가려지는지
+3. 다시 P → 앱 화면이 돌아오는지
+4. 실행 시간(10초 이내)과 메모리 확인
+5. FormFactorConsole 12.9″ 세로형(628×855)에서 깨지지 않는지
+
+### 되돌리기
+- 문제가 생기면 브랜치를 버리면 된다. main은 영향받지 않는다.

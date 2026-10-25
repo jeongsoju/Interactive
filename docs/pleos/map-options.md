@@ -22,8 +22,31 @@
 - 네이버·카카오는 **가입과 키가 필요**하다. 키는 코드에 직접 쓰지 않고 `local.properties` 같은 곳에 둬야 한다(CLAUDE.md 보안 규칙).
 - 공모전 시연용이라면 **MapLibre + 무료 타일**이 가장 부담이 없다. 한국 지명·도로 품질이 중요하면 네이버를 고려한다.
 
-## 에뮬레이터에서 뜨는지 확인하는 방법 (아직 실행 안 함)
-### 1단계: MapLibre (가입·키 없음 → 바로 가능)
+## ✅ MapLibre 실제 테스트 결과 (2026-10-25)
+| 항목 | 결과 |
+|---|---|
+| 라이브러리 | `org.maplibre.gl:android-sdk:13.7.1` (Maven Central, 키 없음) |
+| 지도 스타일 | OpenFreeMap `https://tiles.openfreemap.org/styles/liberty` (가입·키 없음) |
+| 표시 | ✅ 강릉(37.7519, 128.8961) 줌 13. 도로·강·바다, **한글+영문 지명**까지 정상 표시 |
+| 첫 화면 완성 시간 | **5.3초** (화면 생성 → 지도 완전히 그려짐, 첫 실행·캐시 없음 기준) |
+| 메모리 | **PSS 132MB** (RSS 223MB, Native 79MB, Java 9MB) → 기준 400MB 이하 ✅ |
+| CPU | 지도를 띄워 둔 채 가만히 있을 때 0% |
+| 실험 코드 | `automotive/src/main/java/com/example/interactive/spike/SpikeMapActivity.kt` |
+| 실행 | `adb shell am start --user 10 -n com.example.interactive/.spike.SpikeMapActivity` |
+
+### ⚠️ 꼭 필요했던 설정
+- **`android.permission.ACCESS_NETWORK_STATE` 권한이 없으면 지도가 안 그려진다.**
+  - 이 권한이 없으면 MapLibre가 "인터넷 연결 없음"으로 판단(`Mbgl-ConnectivityReceiver: connected - false`)해 타일을 받지 않는다. 결과는 배경색만 있는 빈 화면이다.
+- `android.permission.INTERNET`은 MapLibre 라이브러리가 자동으로 넣어준다.
+- 화면 생명주기(onStart/onResume/onPause/onStop/onDestroy)를 `MapView`에 꼭 전달해야 한다.
+
+### 남은 확인
+- 여행 경로 선·영토(행정동 경계) 색칠 그리기 → 실제 기능 개발 때 확인
+- OpenFreeMap은 무료지만 **서비스 보증(SLA)이 없다.** 시연 날 인터넷이 불안하면 지도가 안 뜰 수 있다 → 시연 지역 타일을 미리 받아두는 오프라인 지도(MapLibre offline region)를 검토
+- 네이버 지도와 품질 비교 (가입 필요)
+
+## 확인 방법 (참고용으로 남겨 둔 원래 계획)
+### 1단계: MapLibre (가입·키 없음 → 바로 가능) — 위에서 완료
 1. spike 브랜치 `automotive` 모듈에 `org.maplibre.gl:android-sdk` 의존성 추가 (Maven Central, 버전은 추가할 때 최신 안정판 확인)
 2. 실험 화면에 `MapView`를 넣고 스타일을 `https://demotiles.maplibre.org/style.json`으로 지정
 3. 빌드 → 설치 → `adb shell am start --user 10 -n com.example.interactive/.spike.SpikeMapActivity`
