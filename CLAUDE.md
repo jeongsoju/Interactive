@@ -44,7 +44,7 @@
 ## 5. 설계 원칙
 - 차량 데이터는 인터페이스 `VehicleDataSource`로 분리하고 구현체를 두 개 둔다
   - `RealVehicleDataSource`: Pleos SDK에서 실제로 읽음
-  - `ReplayVehicleDataSource`: JSON 파일의 가짜 여행을 시간순으로 재생 (에뮬레이터에 위치·속도 시뮬레이션이 없으므로 개발·시연 모두 이걸 쓴다)
+  - `ReplayVehicleDataSource`: JSON 파일의 가짜 여행을 시간순으로 재생 (에뮬레이터는 Virtual Console로 속도·기어를, `adb emu geo fix`로 위치 한 점을 넣을 수 있지만 경로를 따라 움직이는 재생은 안 되므로 개발·시연 모두 이걸 쓴다)
 - 데이터 구조: 여행(Trip) → 정차 지점(Stop: 위치, 시작/끝 시각, 체류 시간, 탑승 인원) → 영토(Territory: 행정동 코드, 주인, 점수)
 - 정차 감지: 기어 P → 정차 시작, D → 정차 끝, 일정 시간 이상이면 체류로 기록
 - 기어는 AAOS 표준 `CarPropertyManager`의 `GEAR_SELECTION`(권한 `android.car.permission.CAR_POWERTRAIN`)으로 읽는다. 주행 중 화면 숨기기는 `CarUxRestrictions`로 판단한다. Pleos `Gear` API는 문서에 없어 쓰지 않는다(설명회 질문 대상)
