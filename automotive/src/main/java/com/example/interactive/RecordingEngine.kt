@@ -19,6 +19,9 @@ import com.example.interactive.db.save
 import com.example.interactive.shared.model.Dong
 import com.example.interactive.shared.model.DongLocator
 import com.example.interactive.shared.model.Stop
+import com.example.interactive.shared.model.Territory
+import com.example.interactive.shared.record.TerritoryChange
+import com.example.interactive.shared.record.TerritoryScorer
 import com.example.interactive.shared.model.Trip
 import com.example.interactive.shared.record.TripEvent
 import com.example.interactive.shared.record.TripRecorder
@@ -43,6 +46,7 @@ data class RecordSnapshot(
 )
 
 private const val TICK_MILLIS = 250L
+private const val MAX_CHANGES = 5
 private const val PREFS = "interactive"
 private const val KEY_MODE = "mode"
 
@@ -82,6 +86,16 @@ class RecordingEngine(private val app: Application) {
 
     var replaySpeed by mutableStateOf(1)
         private set
+
+    /** 동마다 주인과 점수. 체류가 확정될 때마다 다시 계산한다 */
+    var territories by mutableStateOf<List<Territory>>(emptyList())
+        private set
+
+    /** 가장 최근에 주인이 바뀐 동들(최신이 앞). 10단계 P 카드가 쓴다 */
+    var territoryChanges by mutableStateOf<List<TerritoryChange>>(emptyList())
+        private set
+
+    private var owners: Map<String, String?> = emptyMap()
 
     var records by mutableStateOf(RecordSnapshot())
         private set
@@ -179,6 +193,9 @@ class RecordingEngine(private val app: Application) {
         source = newSource
         state = newSource?.state
         records = RecordSnapshot(recorder.trips, recorder.stops, recorder.discardedStops)
+        owners = sample.territories.associate { it.dongCode to it.ownerId }
+        territoryChanges = emptyList()
+        updateTerritories(newSource?.state?.nowMillis ?: startMillis)
         newSource?.let { feedRecorder(it.state) }
         newSource?.setOnChange { feedRecorder(it) }
         if (newSource is ReplayVehicleDataSource) {
@@ -192,6 +209,20 @@ class RecordingEngine(private val app: Application) {
         val events = recorder.onState(newState)
         records = RecordSnapshot(recorder.trips, recorder.stops, recorder.discardedStops)
         if (events.isNotEmpty()) scope.launch(writer) { events.forEach { persist(it) } }
+        if (events.any { it is TripEvent.StayConfirmed || (it is TripEvent.StopEnded && it.kept) }) {
+            territoryChanges = (updateTerritories(newState.nowMillis) + territoryChanges).take(MAX_CHANGES)
+        }
+    }
+
+    // 내 정차(샘플 지난 여행 + 지금까지 기록)로 내 점수를 구하고, 친구 점수는 샘플 값을 쓴다 (친구는 가짜 데이터)
+    private fun updateTerritories(nowMillis: Long): List<TerritoryChange> {
+        val myStops = sample.pastTrips.flatMap { it.stops } + recorder.stops
+        val mine = TerritoryScorer.myScores(myStops, nowMillis, homeDongCode = null) // 우리 집 동네는 13단계 설정에서
+        val friends = sample.territories.associate { it.dongCode to it.scores.filterKeys { id -> id != TerritoryScorer.MY_ID } }
+        val result = TerritoryScorer.compute(mine, friends, owners)
+        territories = result.territories
+        owners = result.territories.associate { it.dongCode to it.ownerId }
+        return result.changes
     }
 
     private suspend fun persist(event: TripEvent) {

@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.interactive.shared.model.Stop
+import com.example.interactive.shared.record.TerritoryScorer
 import com.example.interactive.shared.vehicle.Gear
 import com.example.interactive.shared.vehicle.LatLng
 import com.example.interactive.shared.vehicle.ManualVehicleDataSource
@@ -158,6 +159,7 @@ fun DebugScreen(vm: RecordingEngine) {
                 Column(modifier = Modifier.weight(1f).then(scroll), verticalArrangement = spacing) {
                     StatusBlock(vm, state)
                     RecordsBlock(vm, state)
+                    TerritoryBlock(vm)
                 }
                 Column(modifier = Modifier.weight(1f).then(scroll), verticalArrangement = spacing) {
                     ControlsBlock(vm)
@@ -168,6 +170,7 @@ fun DebugScreen(vm: RecordingEngine) {
                 StatusBlock(vm, state)
                 ControlsBlock(vm)
                 RecordsBlock(vm, state)
+                TerritoryBlock(vm)
             }
         }
     }
@@ -337,5 +340,30 @@ private fun RealStatus(real: RealVehicleDataSource) {
         Text("실제 차 연결 상태", style = MaterialTheme.typography.titleLarge)
         Text("주행 규제: ${if (real.uxRestricted) "켜짐(주행 중)" else "꺼짐"}", style = MaterialTheme.typography.bodyLarge)
         real.notes.forEach { Text("· $it", style = MaterialTheme.typography.bodyMedium) }
+    }
+}
+
+// 임시 화면: 동마다 주인과 내 점수 (체류가 확정될 때마다 바뀐다)
+@Composable
+private fun TerritoryBlock(vm: RecordingEngine) {
+    fun dongName(code: String) = vm.dongLocator.byCode(code)?.name ?: code
+    fun person(id: String?) = when (id) {
+        null -> "주인 없음"
+        TerritoryScorer.MY_ID -> "내 땅"
+        else -> vm.sample.friends.firstOrNull { it.id == id }?.name?.let { "$it 땅" } ?: id
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("영토", style = MaterialTheme.typography.headlineSmall)
+        if (vm.territories.isEmpty()) Text("아직 없음", style = MaterialTheme.typography.bodyLarge)
+        vm.territories.forEach { t ->
+            val mine = t.scores[TerritoryScorer.MY_ID] ?: 0
+            Text("• ${dongName(t.dongCode)} · ${person(t.ownerId)} · 내 점수 $mine", style = MaterialTheme.typography.bodyLarge)
+        }
+        vm.territoryChanges.forEach { c ->
+            Text(
+                "변화: ${dongName(c.dongCode)} ${person(c.previousOwnerId)} → ${person(c.newOwnerId)}",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
     }
 }
