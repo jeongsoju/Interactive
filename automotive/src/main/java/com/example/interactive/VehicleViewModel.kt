@@ -9,9 +9,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.interactive.db.AppDatabase
+import com.example.interactive.db.RoutePointRow
+import com.example.interactive.db.clearAll
+import com.example.interactive.db.loadAll
+import com.example.interactive.db.save
 import com.example.interactive.shared.model.Stop
 import com.example.interactive.shared.model.Trip
+import com.example.interactive.shared.record.TripEvent
 import com.example.interactive.shared.record.TripRecorder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.example.interactive.shared.sample.SampleData
 import com.example.interactive.shared.vehicle.Gear
 import com.example.interactive.shared.vehicle.ManualVehicleDataSource
@@ -64,6 +75,12 @@ class VehicleViewModel(app: Application) : AndroidViewModel(app) {
 
     private var recorder = TripRecorder()
 
+    private val dao = AppDatabase.create(app).records()
+
+    // 저장은 한 줄로 순서대로 처리해야 '지우기'가 '쓰기'보다 먼저 끝나는 일이 없다
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val writer = Dispatchers.IO.limitedParallelism(1)
+
     private var lastTickRealtime = 0L
 
     private val ticker = object : Runnable {
@@ -76,8 +93,13 @@ class VehicleViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // 저장된 기록을 먼저 불러온 뒤에 차량 데이터를 받기 시작한다
     init {
-        buildSource()
+        viewModelScope.launch {
+            val (trips, stops) = withContext(writer) { dao.loadAll() }
+            recorder.restore(trips, stops)
+            buildSource()
+        }
     }
 
     fun showChooser() { choosing = true }
@@ -89,14 +111,23 @@ class VehicleViewModel(app: Application) : AndroidViewModel(app) {
         mode = newMode
         prefs.edit().putString(KEY_MODE, newMode.name).apply()
         choosing = false
-        if (resetSample) sample = loadSample()
+        if (resetSample) {
+            sample = loadSample()
+            clearRecords()
+        }
         buildSource()
     }
 
-    /** 샘플 데이터를 다시 읽고 지금 모드의 처음 상태로 돌아간다 */
+    /** 샘플 데이터를 다시 읽고, 저장된 기록도 지우고, 지금 모드의 처음 상태로 돌아간다 */
     fun resetData() {
         sample = loadSample()
+        clearRecords()
         buildSource()
+    }
+
+    private fun clearRecords() {
+        recorder = TripRecorder()
+        viewModelScope.launch(writer) { dao.clearAll() }
     }
 
     fun changeReplaySpeed(speed: Int) {
@@ -125,8 +156,7 @@ class VehicleViewModel(app: Application) : AndroidViewModel(app) {
         }
         source = newSource
         state = newSource?.state
-        recorder = TripRecorder()
-        records = RecordSnapshot()
+        records = RecordSnapshot(recorder.trips, recorder.stops, recorder.discardedStops)
         newSource?.let { feedRecorder(it.state) }
         newSource?.setOnChange { feedRecorder(it) }
         if (newSource is ReplayVehicleDataSource) {
@@ -137,8 +167,25 @@ class VehicleViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun feedRecorder(newState: VehicleState) {
         state = newState
-        recorder.onState(newState)
+        val events = recorder.onState(newState)
         records = RecordSnapshot(recorder.trips, recorder.stops, recorder.discardedStops)
+        if (events.isNotEmpty()) viewModelScope.launch(writer) { events.forEach { persist(it) } }
+    }
+
+    private suspend fun persist(event: TripEvent) {
+        when (event) {
+            is TripEvent.TripStarted -> dao.save(event.trip)
+            is TripEvent.TripEnded -> dao.save(event.trip)
+            is TripEvent.StopStarted -> dao.save(event.stop)
+            is TripEvent.StopEnded -> if (event.kept) dao.save(event.stop) else dao.deleteStop(event.stop.id)
+            is TripEvent.RoutePointAdded -> dao.addRoutePoint(
+                RoutePointRow(
+                    tripId = event.tripId, timeMillis = event.point.timeMillis,
+                    latitude = event.point.latitude, longitude = event.point.longitude,
+                )
+            )
+            is TripEvent.StayConfirmed -> {}
+        }
     }
 
     override fun onCleared() {

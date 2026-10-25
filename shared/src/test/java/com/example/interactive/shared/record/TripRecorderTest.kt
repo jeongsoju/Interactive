@@ -41,8 +41,56 @@ class TripRecorderTest {
     fun firstDStartsTrip() {
         feed(Gear.P, t0)
         val events = feed(Gear.D, t0 + minute, odo = 105.0)
-        assertTrue(events.single() is TripStarted)
+        assertTrue(events.first() is TripStarted)
         assertEquals(105.0, recorder.trips.single().startOdometerKm, 1e-9)
+    }
+
+    @Test
+    fun routePointIsAddedOnStartThenEveryMinuteWhileDriving() {
+        feed(Gear.D, t0) // 시작하자마자 1점
+        feed(Gear.D, t0 + 30_000L) // 30초: 아직
+        feed(Gear.D, t0 + minute) // 1분: 2점
+        val events = feed(Gear.D, t0 + 2 * minute)
+        assertTrue(events.single() is TripEvent.RoutePointAdded)
+        assertEquals(3, recorder.trips.single().route.size)
+    }
+
+    @Test
+    fun noRoutePointWhileParkedOrWithoutLocation() {
+        feed(Gear.D, t0, location = null)
+        assertTrue(recorder.trips.single().route.isEmpty())
+        feed(Gear.P, t0 + minute)
+        feed(Gear.P, t0 + 5 * minute)
+        assertTrue(recorder.trips.single().route.isEmpty())
+    }
+
+    @Test
+    fun restoreContinuesOpenTripWithoutDuplicatingStop() {
+        feed(Gear.D, t0)
+        feed(Gear.P, t0 + hour, odo = 120.0)
+        val saved = TripRecorder(ZoneOffset.UTC)
+        saved.restore(recorder.trips, recorder.stops)
+        // 앱을 다시 켰는데 아직 P: 같은 정차가 새로 생기지 않는다
+        val events = saved.onState(VehicleState(Gear.P, place, 120.0, 2, t0 + hour + 5 * minute))
+        assertTrue(events.isEmpty())
+        assertEquals(1, saved.stops.size)
+        // 다시 출발하면 같은 여행에 이어진다
+        saved.onState(VehicleState(Gear.D, place, 120.0, 2, t0 + hour + 20 * minute))
+        assertEquals(1, saved.trips.size)
+        assertEquals(t0 + hour + 20 * minute, saved.stops.single().endMillis)
+    }
+
+    @Test
+    fun restoreEndsOldTripAndKeepsIds() {
+        feed(Gear.D, t0)
+        feed(Gear.P, t0 + hour, odo = 120.0)
+        val saved = TripRecorder(ZoneOffset.UTC)
+        saved.restore(recorder.trips, recorder.stops)
+        val events = saved.onState(VehicleState(Gear.P, place, 120.0, 2, t0 + 5 * hour))
+        assertTrue(events.any { it is TripEnded })
+        assertEquals(120.0, saved.trips.single().endOdometerKm!!, 1e-9)
+        saved.onState(VehicleState(Gear.D, place, 125.0, 2, t0 + 6 * hour))
+        assertEquals(listOf(1L, 2L), saved.trips.map { it.id })
     }
 
     @Test
