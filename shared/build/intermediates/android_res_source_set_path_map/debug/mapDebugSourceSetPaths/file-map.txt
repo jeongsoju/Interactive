@@ -1,9 +1,0 @@
-com.example.interactive.shared-pngs-0 C:\dev\shared\build\generated\res\pngs\debug
-com.example.interactive.shared-updated_navigation_xml-1 C:\dev\shared\build\generated\updated_navigation_xml\debug
-com.example.interactive.shared-mergeDebugResources-2 C:\dev\shared\build\intermediates\incremental\debug\mergeDebugResources\merged.dir
-com.example.interactive.shared-mergeDebugResources-3 C:\dev\shared\build\intermediates\incremental\debug\mergeDebugResources\stripped.dir
-com.example.interactive.shared-debug-4 C:\dev\shared\build\intermediates\merged_res\debug\mergeDebugResources
-com.example.interactive.shared-debug-5 C:\dev\shared\build\intermediates\packaged_res\debug\packageDebugResources
-com.example.interactive.shared-debug-6 C:\dev\shared\src\debug\res
-com.example.interactive.shared-main-7 C:\dev\shared\src\main\res
-gradleHome-0 C:\Users\M3700X27\.gradle

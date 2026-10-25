@@ -17,5 +17,4 @@ android {
     }
 }
 dependencies {
-    implementation libs.androidx.app
 }

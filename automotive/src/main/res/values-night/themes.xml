@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.Interactive" parent="android:Theme.Material.NoActionBar" />
+</resources>

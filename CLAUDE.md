@@ -25,7 +25,8 @@
 - 모듈: `automotive`(차 앱), `mobile`(폰 앱), `shared`(공용 코드)
 - minSdk 34, 에뮬레이터: **Pleos Connect Emulator v2.1.0 (API 34)**, AVD 이름 `Pleos_Connect_v2.1.0`
 - adb: `"$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"`
-- 현재 템플릿은 Android Studio의 Automotive 템플릿(Car App Library 방식, `MyCarAppScreen`). 자유로운 지도·카드 UI가 필요하므로, 구조를 바꿀 때는 **먼저 이유와 계획을 사용자에게 설명하고 승인받는다.**
+- 화면 구조: 일반 화면 방식(`MainActivity` + Jetpack Compose). Car App Library 템플릿 방식은 2026-10-25에 걷어냈다. 구조를 다시 바꿀 때는 **먼저 이유와 계획을 사용자에게 설명하고 승인받는다.**
+- 주행 중 화면: `distractionOptimized`를 선언하지 않는다 → 기어 D(주행 규제)에서는 시스템이 "주행 중에는 사용할 수 없습니다."로 앱을 가린다
 
 ## 4. Pleos 개발 규칙 (반드시 지킨다)
 - **Pleos API는 문서에 있는 것만 쓴다.** 함수·클래스 이름을 추측해서 만들지 않는다. 필요하면 `docs/pleos/`의 문서를 먼저 읽고, 없으면 https://document.pleos.ai/docs/pleos-only/ 에서 해당 페이지를 가져와 `docs/pleos/`에 저장한 뒤 쓴다.
