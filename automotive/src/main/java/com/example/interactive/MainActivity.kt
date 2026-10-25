@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
             }
             InteractiveTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    if (viewModel.choosing) ModeChooser(viewModel) else DebugScreen(viewModel)
+                    if (viewModel.choosing) ModeChooser(viewModel) else AppRoot(viewModel)
                 }
             }
         }
