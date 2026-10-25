@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.interactive.map.MapScreen
 import com.example.interactive.shared.record.TerritoryScorer
+import com.example.interactive.shared.record.TripEntries
 import com.example.interactive.shared.vehicle.Gear
 import com.example.interactive.ui.Glass
 import com.example.interactive.ui.PillShape
@@ -45,27 +47,36 @@ import com.example.interactive.ui.theme.LocalAppColors
 private enum class Tab(val label: String, val icon: TabIcon) {
     MAP("지도", TabIcon.MAP),
     RECORDS("기록", TabIcon.RECORDS),
+    DEV("개발", TabIcon.DEV), // 임시: 모드 바꾸기·직접 조작 패널. 13단계 설정 탭으로 옮기면 없앤다
 }
 
 private val WideScreenWidth = 900.dp
 
 /**
  * 화면 뼈대 (docs/design/README.md 구조): 지도가 전체를 채우고, 카드·칩·범례·탭 막대가 위에 떠 있다.
- * 탭 4개(지도·기록·영토·설정)는 11~14단계에서 채운다. 지금은 지도와 임시 확인 화면만 있다.
+ * 탭 4개(지도·기록·영토·설정)는 12~14단계에서 채운다. 지금은 지도·기록과 임시 "개발" 탭이 있다.
  */
 @Composable
 fun AppRoot(vm: RecordingEngine) {
     var tab by rememberSaveable { mutableStateOf(Tab.MAP) }
+    var selectedTrip by rememberSaveable { mutableStateOf<String?>(null) }
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val wide = maxWidth >= WideScreenWidth
+        val entries = remember(vm.sample, vm.records) { TripEntries.build(vm.sample.pastTrips, vm.records.trips, vm.records.stops) }
+        // 기록 탭에서 고른 여행만 지도에 경로로 그린다
+        val highlight = if (tab == Tab.RECORDS) entries.firstOrNull { it.key == selectedTrip } else null
         when (tab) {
             Tab.MAP -> {
-                MapScreen(vm)
+                MapScreen(vm, null, wide)
                 MapChips(vm, wide)
                 PCardOverlay(vm)
                 if (wide) Legend(Modifier.align(Alignment.BottomEnd).padding(40.dp))
             }
-            Tab.RECORDS -> Box(modifier = Modifier.fillMaxSize().padding(bottom = 120.dp)) { DebugScreen(vm) }
+            Tab.RECORDS -> {
+                MapScreen(vm, highlight, wide)
+                RecordsPanel(vm, entries, selectedTrip, onSelect = { selectedTrip = it }, wide = wide)
+            }
+            Tab.DEV -> Box(modifier = Modifier.fillMaxSize().padding(bottom = 120.dp)) { DebugScreen(vm) }
         }
         TabBar(tab, wide, onSelect = { tab = it }, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
     }

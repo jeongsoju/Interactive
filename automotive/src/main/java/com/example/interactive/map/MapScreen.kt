@@ -30,11 +30,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.interactive.RecordingEngine
+import com.example.interactive.shared.record.TripEntry
 import com.example.interactive.ui.theme.AppColors
 import com.example.interactive.ui.theme.LocalAppColors
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
@@ -50,6 +52,8 @@ import org.maplibre.android.style.sources.GeoJsonSource
 
 private const val DONG_SOURCE = "dongs"
 private const val CAR_SOURCE = "car"
+private const val ROUTE_SOURCE = "route"
+private const val STOPS_SOURCE = "stops"
 private const val EMPTY = """{"type":"FeatureCollection","features":[]}"""
 
 private fun Color.expr(): Expression = Expression.color(toArgb())
@@ -59,7 +63,7 @@ private fun byKind(mine: Expression, friend: Expression, none: Expression): Expr
 
 /** 지도 탭: 강릉 지도 위에 동마다 주인 색을 칠하고, 차 위치를 점으로 보여 준다. 라이트·다크는 시스템을 따른다 */
 @Composable
-fun MapScreen(vm: RecordingEngine) {
+fun MapScreen(vm: RecordingEngine, highlight: TripEntry? = null, wide: Boolean = true) {
     val context = LocalContext.current
     val colors = LocalAppColors.current
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
@@ -129,6 +133,30 @@ fun MapScreen(vm: RecordingEngine) {
         map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(dong.center.latitude, dong.center.longitude), 13.0))
         vm.clearFocus()
     }
+    // 기록 탭에서 고른 여행의 경로와 정차 지점 (진행 중인 여행이면 점이 늘 때마다 다시 그린다)
+    LaunchedEffect(styleVersion, highlight) {
+        if (styleVersion == 0) return@LaunchedEffect
+        map?.getStyle {
+            it.getSourceAs<GeoJsonSource>(ROUTE_SOURCE)?.setGeoJson(TripGeoJson.line(highlight?.path().orEmpty()))
+            it.getSourceAs<GeoJsonSource>(STOPS_SOURCE)?.setGeoJson(TripGeoJson.points(highlight?.stopPoints().orEmpty()))
+        }
+    }
+    // 여행을 고르면 그 경로가 패널에 가리지 않게 보이도록 카메라를 맞춘다 (고를 때 한 번만)
+    LaunchedEffect(styleVersion, highlight?.key) {
+        val points = highlight?.path().orEmpty()
+        if (styleVersion == 0 || points.isEmpty()) return@LaunchedEffect
+        val density = context.resources.displayMetrics.density
+        val latLngs = points.map { LatLng(it.latitude, it.longitude) }
+        val update = if (latLngs.size == 1) {
+            CameraUpdateFactory.newLatLngZoom(latLngs.first(), 13.0)
+        } else {
+            val bounds = LatLngBounds.fromLatLngs(latLngs)
+            val left = (if (wide) 700 else 40) * density
+            val bottom = (if (wide) 160 else 560) * density
+            CameraUpdateFactory.newLatLngBounds(bounds, left.toInt(), (120 * density).toInt(), (80 * density).toInt(), bottom.toInt())
+        }
+        map?.animateCamera(update)
+    }
     LaunchedEffect(styleVersion, vm.state?.location) {
         val location = vm.state?.location
         if (styleVersion == 0 || location == null) return@LaunchedEffect
@@ -171,6 +199,27 @@ private fun addTerritoryLayers(style: Style, colors: AppColors) {
             PropertyFactory.lineColor(colors.noneLine.expr()),
             PropertyFactory.lineWidth(2f),
             PropertyFactory.lineDasharray(arrayOf(5f, 4f)),
+        )
+    )
+    // 기록 탭에서 고른 여행: 흰 바탕선 위에 파란 선, 정차 지점은 점
+    style.addSource(GeoJsonSource(ROUTE_SOURCE, EMPTY))
+    style.addSource(GeoJsonSource(STOPS_SOURCE, EMPTY))
+    style.addLayer(
+        LineLayer("route-casing", ROUTE_SOURCE).withProperties(
+            PropertyFactory.lineColor(Color.White.expr()), PropertyFactory.lineWidth(10f),
+            PropertyFactory.lineCap(Property.LINE_CAP_ROUND), PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+        )
+    )
+    style.addLayer(
+        LineLayer("route-line", ROUTE_SOURCE).withProperties(
+            PropertyFactory.lineColor(colors.primary.expr()), PropertyFactory.lineWidth(6f),
+            PropertyFactory.lineCap(Property.LINE_CAP_ROUND), PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+        )
+    )
+    style.addLayer(
+        CircleLayer("stop-dots", STOPS_SOURCE).withProperties(
+            PropertyFactory.circleRadius(11f), PropertyFactory.circleColor(colors.primary.expr()),
+            PropertyFactory.circleStrokeColor(Color.White.expr()), PropertyFactory.circleStrokeWidth(4f),
         )
     )
     // 차 위치: 파란 점 + 흰 테두리 + 퍼지는 연한 원
