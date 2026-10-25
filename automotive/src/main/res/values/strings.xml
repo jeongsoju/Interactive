@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Interactive</string>
+    <string name="recording_channel">여행 기록</string>
+    <string name="recording_notice">여행을 기록하고 있어요</string>
 </resources>

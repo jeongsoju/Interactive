@@ -8,8 +8,9 @@ import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
+
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import com.example.interactive.db.AppDatabase
 import com.example.interactive.db.RoutePointRow
 import com.example.interactive.db.clearAll
@@ -43,8 +44,14 @@ private const val TICK_MILLIS = 250L
 private const val PREFS = "interactive"
 private const val KEY_MODE = "mode"
 
-/** 고른 모드, 샘플 데이터, 차량 데이터 통로를 들고 있는다. 화면이 돌아가도 유지된다 */
-class VehicleViewModel(app: Application) : AndroidViewModel(app) {
+/**
+ * 고른 모드, 샘플 데이터, 차량 데이터 통로, 여행 기록을 들고 있는다.
+ * 화면(Activity)이 아니라 앱 프로세스(InteractiveApp)가 갖고 있어서, 화면이 닫히거나 가려져도
+ * 기록이 계속된다. 프로세스는 RecordingService가 살려 둔다.
+ */
+class RecordingEngine(private val app: Application) {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val handler = Handler(Looper.getMainLooper())
@@ -95,7 +102,7 @@ class VehicleViewModel(app: Application) : AndroidViewModel(app) {
 
     // 저장된 기록을 먼저 불러온 뒤에 차량 데이터를 받기 시작한다
     init {
-        viewModelScope.launch {
+        scope.launch {
             val (trips, stops) = withContext(writer) { dao.loadAll() }
             recorder.restore(trips, stops)
             buildSource()
@@ -127,7 +134,7 @@ class VehicleViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun clearRecords() {
         recorder = TripRecorder()
-        viewModelScope.launch(writer) { dao.clearAll() }
+        scope.launch(writer) { dao.clearAll() }
     }
 
     fun changeReplaySpeed(speed: Int) {
@@ -141,7 +148,7 @@ class VehicleViewModel(app: Application) : AndroidViewModel(app) {
 
     // 기기 시계는 여기서 시작 시각을 정할 때만 쓴다. 이후 앱의 시간은 모두 VehicleState.nowMillis
     private fun loadSample(): SampleData =
-        SampleDataLoader.load(getApplication(), System.currentTimeMillis())
+        SampleDataLoader.load(app, System.currentTimeMillis())
 
     private fun buildSource() {
         handler.removeCallbacks(ticker)
@@ -169,7 +176,7 @@ class VehicleViewModel(app: Application) : AndroidViewModel(app) {
         state = newState
         val events = recorder.onState(newState)
         records = RecordSnapshot(recorder.trips, recorder.stops, recorder.discardedStops)
-        if (events.isNotEmpty()) viewModelScope.launch(writer) { events.forEach { persist(it) } }
+        if (events.isNotEmpty()) scope.launch(writer) { events.forEach { persist(it) } }
     }
 
     private suspend fun persist(event: TripEvent) {
@@ -186,9 +193,5 @@ class VehicleViewModel(app: Application) : AndroidViewModel(app) {
             )
             is TripEvent.StayConfirmed -> {}
         }
-    }
-
-    override fun onCleared() {
-        handler.removeCallbacks(ticker)
     }
 }

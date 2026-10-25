@@ -1,9 +1,9 @@
 package com.example.interactive
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -45,10 +45,11 @@ import java.util.Locale
 private val ButtonHeight = 64.dp
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: VehicleViewModel by viewModels()
+    private val viewModel: RecordingEngine get() = (application as InteractiveApp).engine
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        startForegroundService(Intent(this, RecordingService::class.java))
         setContent {
             InteractiveTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -62,7 +63,7 @@ class MainActivity : ComponentActivity() {
 // ---- 임시 화면: 모드 선택창 ----
 
 @Composable
-fun ModeChooser(vm: VehicleViewModel) {
+fun ModeChooser(vm: RecordingEngine) {
     var pending by remember { mutableStateOf<AppMode?>(null) }
     val current = vm.mode
 
@@ -135,7 +136,7 @@ fun nearestDongName(location: LatLng?, dongs: List<SampleDong>): String? = locat
 }
 
 @Composable
-fun DebugScreen(vm: VehicleViewModel) {
+fun DebugScreen(vm: RecordingEngine) {
     val state = vm.state ?: return
     val spacing = Arrangement.spacedBy(12.dp)
     val scroll = Modifier.verticalScroll(rememberScrollState())
@@ -163,7 +164,7 @@ fun DebugScreen(vm: VehicleViewModel) {
 }
 
 @Composable
-private fun StatusBlock(vm: VehicleViewModel, state: VehicleState) {
+private fun StatusBlock(vm: RecordingEngine, state: VehicleState) {
     val sample = vm.sample
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("${vm.mode?.label}", style = MaterialTheme.typography.headlineMedium)
@@ -180,7 +181,7 @@ private fun StatusBlock(vm: VehicleViewModel, state: VehicleState) {
 }
 
 @Composable
-private fun ControlsBlock(vm: VehicleViewModel) {
+private fun ControlsBlock(vm: RecordingEngine) {
     when (vm.mode) {
         AppMode.REPLAY -> ReplayControls(vm)
         AppMode.MANUAL -> vm.manual()?.let { ManualPanel(it, vm) }
@@ -192,7 +193,7 @@ private val clockFormat = SimpleDateFormat("HH:mm", Locale.KOREA)
 
 // 임시 화면: 지금까지 기록된 여행과 정차
 @Composable
-private fun RecordsBlock(vm: VehicleViewModel, state: VehicleState) {
+private fun RecordsBlock(vm: RecordingEngine, state: VehicleState) {
     val records = vm.records
     val now = state.nowMillis
     fun dong(stop: Stop) = stop.latitude?.let { nearestDongName(LatLng(it, stop.longitude ?: 0.0), vm.sample.dongs) } ?: "위치 없음"
@@ -249,7 +250,7 @@ private fun StateText(state: VehicleState, nearestDong: String?) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ReplayControls(vm: VehicleViewModel) {
+private fun ReplayControls(vm: RecordingEngine) {
     Text("재생 속도", style = MaterialTheme.typography.titleMedium)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(1, 10, 60).forEach { speed ->
@@ -263,7 +264,7 @@ private fun ReplayControls(vm: VehicleViewModel) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ManualPanel(manual: ManualVehicleDataSource, vm: VehicleViewModel) {
+private fun ManualPanel(manual: ManualVehicleDataSource, vm: RecordingEngine) {
     var open by rememberSaveable { mutableStateOf(true) }
     val state = vm.state ?: return
 
