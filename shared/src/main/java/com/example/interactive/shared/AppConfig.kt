@@ -1,0 +1,28 @@
+package com.example.interactive.shared
+
+// 명세서(docs/spec.md)의 숫자를 모아 둔 곳. 값을 바꿀 때는 여기만 고친다.
+object AppConfig {
+    /** 이만큼 P로 머물면 '체류'로 확정하고 영토 점수를 갱신한다 */
+    const val STAY_MIN_MINUTES = 10
+
+    /** 앱이 다시 켜질 때 마지막 P가 이보다 오래됐으면 여행을 끝낸다 */
+    const val TRIP_END_IDLE_HOURS = 3
+
+    /** 주행 중 경로 점을 저장하는 간격 */
+    const val LOCATION_INTERVAL_SECONDS = 60
+
+    /** 영토 점수를 계산하는 기간 */
+    const val SCORE_WINDOW_DAYS = 30
+
+    /** 영토 점수: 방문한 날 하루당 더하는 점수 */
+    const val VISIT_DAY_BONUS = 30
+
+    /** 영토 점수: 체류 1회에서 인정하는 최대 시간 */
+    const val MAX_STAY_MINUTES_PER_VISIT = 240
+
+    /** 기어가 P가 된 뒤 이 시간 안에 P 카드를 띄운다 */
+    const val CARD_SHOW_WITHIN_MILLIS = 1_000L
+
+    /** 기본 유가(휘발유, 원/L). 설정에서 바꿀 수 있다 */
+    const val DEFAULT_FUEL_PRICE_WON_PER_LITER = 1_850
+}
