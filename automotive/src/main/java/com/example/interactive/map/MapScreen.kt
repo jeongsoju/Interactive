@@ -152,7 +152,8 @@ fun MapScreen(vm: RecordingEngine, highlight: TripEntry? = null, wide: Boolean =
         } else {
             val bounds = LatLngBounds.fromLatLngs(latLngs)
             val left = (if (wide) 700 else 40) * density
-            val bottom = (if (wide) 160 else 560) * density
+            // 세로형: 아래 시트(화면 높이의 55% 이하) + 탭 막대(124dp) + 여유 24dp 위로 경로가 오게 한다
+            val bottom = if (wide) 160 * density else mapView.height * 0.55f + (124 + 24) * density
             CameraUpdateFactory.newLatLngBounds(bounds, left.toInt(), (120 * density).toInt(), (80 * density).toInt(), bottom.toInt())
         }
         map?.animateCamera(update)
