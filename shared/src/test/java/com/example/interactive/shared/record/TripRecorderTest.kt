@@ -25,7 +25,7 @@ class TripRecorderTest {
 
     // 2026-10-25 10:00 UTC. 시간대는 UTC로 고정해 날짜 계산을 예측할 수 있게 한다
     private val t0 = Instant.parse("2026-10-25T10:00:00Z").toEpochMilli()
-    private val recorder = TripRecorder(ZoneOffset.UTC)
+    private val recorder = TripRecorder(ZoneOffset.UTC) { if (it == place) "DONG1" else null }
 
     private fun feed(gear: Gear, atMillis: Long, odo: Double = 100.0, location: LatLng? = place) =
         recorder.onState(VehicleState(gear, location, odo, occupants = 2, nowMillis = atMillis))
@@ -144,6 +144,14 @@ class TripRecorderTest {
         val stop = recorder.stops.single()
         assertNull(stop.latitude)
         assertFalse(stop.hasLocation)
+    }
+
+    @Test
+    fun stopGetsTheDongCodeOfItsLocation() {
+        feed(Gear.D, t0)
+        feed(Gear.P, t0 + hour)
+        assertEquals("DONG1", recorder.stops.single().dongCode)
+        assertTrue(recorder.stops.single().hasLocation)
     }
 
     @Test

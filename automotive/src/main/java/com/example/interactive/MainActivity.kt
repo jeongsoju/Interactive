@@ -36,7 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.interactive.shared.model.Stop
-import com.example.interactive.shared.sample.SampleDong
 import com.example.interactive.shared.vehicle.Gear
 import com.example.interactive.shared.vehicle.LatLng
 import com.example.interactive.shared.vehicle.ManualVehicleDataSource
@@ -145,13 +144,6 @@ private val timeFormat = SimpleDateFormat("MM/dd HH:mm:ss", Locale.KOREA)
 
 private val WideScreenWidth = 900.dp
 
-fun nearestDongName(location: LatLng?, dongs: List<SampleDong>): String? = location?.let { loc ->
-    dongs.minByOrNull {
-        val dLat = it.center.latitude - loc.latitude
-        val dLon = it.center.longitude - loc.longitude
-        dLat * dLat + dLon * dLon
-    }?.name
-}
 
 @Composable
 fun DebugScreen(vm: RecordingEngine) {
@@ -189,7 +181,7 @@ private fun StatusBlock(vm: RecordingEngine, state: VehicleState) {
         OutlinedButton(onClick = vm::showChooser, modifier = Modifier.heightIn(min = ButtonHeight)) {
             Text("모드 바꾸기")
         }
-        StateText(state, nearestDongName(state.location, sample.dongs))
+        StateText(state, state.location?.let { vm.dongLocator.find(it)?.name ?: "경계 밖" })
         Text(
             "샘플 데이터: 동 ${sample.dongs.size}곳 · 지난 여행 ${sample.pastTrips.size}개 · " +
                 "친구 ${sample.friends.joinToString { it.name }} · 영토 ${sample.territories.size}곳",
@@ -215,7 +207,7 @@ private val clockFormat = SimpleDateFormat("HH:mm", Locale.KOREA)
 private fun RecordsBlock(vm: RecordingEngine, state: VehicleState) {
     val records = vm.records
     val now = state.nowMillis
-    fun dong(stop: Stop) = stop.latitude?.let { nearestDongName(LatLng(it, stop.longitude ?: 0.0), vm.sample.dongs) } ?: "위치 없음"
+    fun dong(stop: Stop) = stop.dongCode?.let { vm.dongLocator.byCode(it)?.name } ?: if (stop.latitude == null) "위치 없음" else "경계 밖"
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("여행 기록", style = MaterialTheme.typography.titleLarge)
@@ -246,7 +238,7 @@ private fun RecordsBlock(vm: RecordingEngine, state: VehicleState) {
 }
 
 @Composable
-private fun StateText(state: VehicleState, nearestDong: String?) {
+private fun StateText(state: VehicleState, dongName: String?) {
     val gearText = when (state.gear) {
         Gear.P -> "P (주차)"
         Gear.R -> "R (후진)"
@@ -258,7 +250,7 @@ private fun StateText(state: VehicleState, nearestDong: String?) {
         Text("기어  $gearText", style = MaterialTheme.typography.titleLarge)
         Text(
             "위치  ${loc?.let { "%.4f, %.4f".format(it.latitude, it.longitude) } ?: "없음"}" +
-                (nearestDong?.let { "  (가장 가까운 동: $it)" } ?: ""),
+                (dongName?.let { "  ($it)" } ?: ""),
             style = MaterialTheme.typography.titleLarge,
         )
         Text("주행거리  %.1f km".format(state.odometerKm), style = MaterialTheme.typography.titleLarge)

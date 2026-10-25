@@ -1,11 +1,11 @@
 package com.example.interactive
 
 import android.content.Context
+import com.example.interactive.shared.model.Dong
 import com.example.interactive.shared.model.Stop
 import com.example.interactive.shared.model.Territory
 import com.example.interactive.shared.model.Trip
 import com.example.interactive.shared.sample.SampleData
-import com.example.interactive.shared.sample.SampleDong
 import com.example.interactive.shared.sample.SampleFriend
 import com.example.interactive.shared.sample.SampleTrip
 import com.example.interactive.shared.vehicle.Gear
@@ -20,13 +20,13 @@ private const val MINUTE_MILLIS = 60_000L
 /** assets/sample_data.json을 읽는다. 과거 여행의 날짜는 nowMillis 기준으로 계산한다 */
 object SampleDataLoader {
 
-    fun load(context: Context, nowMillis: Long): SampleData {
+    fun load(context: Context, allDongs: List<Dong>, nowMillis: Long): SampleData {
         val text = context.assets.open("sample_data.json").bufferedReader().use { it.readText() }
         val root = JSONObject(text)
 
-        val dongs = root.getJSONArray("dongs").map {
-            SampleDong(it.getString("code"), it.getString("name"), LatLng(it.getDouble("lat"), it.getDouble("lon")))
-        }
+        val allByCode = allDongs.associateBy { it.code }
+        val codes = root.getJSONArray("dongs")
+        val dongs = List(codes.length()) { allByCode.getValue(codes.getString(it)) }
         val dongByCode = dongs.associateBy { it.code }
 
         val friends = root.getJSONArray("friends").map { SampleFriend(it.getString("id"), it.getString("name")) }

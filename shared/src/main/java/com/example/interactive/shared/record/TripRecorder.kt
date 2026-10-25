@@ -5,6 +5,7 @@ import com.example.interactive.shared.model.RoutePoint
 import com.example.interactive.shared.model.Stop
 import com.example.interactive.shared.model.Trip
 import com.example.interactive.shared.vehicle.Gear
+import com.example.interactive.shared.vehicle.LatLng
 import com.example.interactive.shared.vehicle.VehicleState
 import java.time.Instant
 import java.time.ZoneId
@@ -31,7 +32,10 @@ sealed interface TripEvent {
  * 시간 판단은 모두 VehicleState.nowMillis를 쓰고, 날짜가 바뀌었는지만 zone(기기 시간대)으로 본다.
  * N(중립)은 무시한다.
  */
-class TripRecorder(private val zone: ZoneId = ZoneId.systemDefault()) {
+class TripRecorder(
+    private val zone: ZoneId = ZoneId.systemDefault(),
+    private val dongCodeAt: (LatLng) -> String? = { null },
+) {
 
     /** 여행 목록. 진행 중인 여행이 있으면 마지막이 그것이다 */
     var trips: List<Trip> = emptyList()
@@ -149,7 +153,7 @@ class TripRecorder(private val zone: ZoneId = ZoneId.systemDefault()) {
             tripId = trips.last().id,
             latitude = state.location?.latitude,
             longitude = state.location?.longitude,
-            dongCode = null, // 위치→동 변환은 7단계
+            dongCode = state.location?.let(dongCodeAt),
             startMillis = state.nowMillis,
             endMillis = null,
             occupants = state.occupants,

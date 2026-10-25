@@ -12,7 +12,8 @@ import org.junit.runner.RunWith
 class SampleDataLoaderTest {
 
     private val now = 1_700_000_000_000L
-    private val data = SampleDataLoader.load(InstrumentationRegistry.getInstrumentation().targetContext, now)
+    private val context = InstrumentationRegistry.getInstrumentation().targetContext
+    private val data = SampleDataLoader.load(context, DongBoundaryLoader.load(context), now)
 
     @Test
     fun readsEveryList() {

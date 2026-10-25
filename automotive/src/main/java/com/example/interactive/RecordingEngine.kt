@@ -16,6 +16,8 @@ import com.example.interactive.db.RoutePointRow
 import com.example.interactive.db.clearAll
 import com.example.interactive.db.loadAll
 import com.example.interactive.db.save
+import com.example.interactive.shared.model.Dong
+import com.example.interactive.shared.model.DongLocator
 import com.example.interactive.shared.model.Stop
 import com.example.interactive.shared.model.Trip
 import com.example.interactive.shared.record.TripEvent
@@ -53,6 +55,10 @@ class RecordingEngine(private val app: Application) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    /** 강릉 행정동 경계. 위치가 어느 동인지 찾는 데 쓴다 (앱을 켤 때 한 번 읽는다) */
+    val dongs: List<Dong> = DongBoundaryLoader.load(app)
+    val dongLocator = DongLocator(dongs)
+
     private val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val handler = Handler(Looper.getMainLooper())
 
@@ -80,7 +86,7 @@ class RecordingEngine(private val app: Application) {
     var records by mutableStateOf(RecordSnapshot())
         private set
 
-    private var recorder = TripRecorder()
+    private var recorder = newRecorder()
 
     private val dao = AppDatabase.create(app).records()
 
@@ -132,8 +138,10 @@ class RecordingEngine(private val app: Application) {
         buildSource()
     }
 
+    private fun newRecorder() = TripRecorder(dongCodeAt = dongLocator::codeAt)
+
     private fun clearRecords() {
-        recorder = TripRecorder()
+        recorder = newRecorder()
         scope.launch(writer) { dao.clearAll() }
     }
 
@@ -153,7 +161,7 @@ class RecordingEngine(private val app: Application) {
 
     // 기기 시계는 여기서 시작 시각을 정할 때만 쓴다. 이후 앱의 시간은 모두 VehicleState.nowMillis
     private fun loadSample(): SampleData =
-        SampleDataLoader.load(app, System.currentTimeMillis())
+        SampleDataLoader.load(app, dongs, System.currentTimeMillis())
 
     private fun buildSource() {
         handler.removeCallbacks(ticker)

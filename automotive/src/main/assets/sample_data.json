@@ -1,49 +1,42 @@
 {
-  "dongs": [
-    { "code": "GN01", "name": "중앙동", "lat": 37.7520, "lon": 128.8760 },
-    { "code": "GN02", "name": "초당동", "lat": 37.7890, "lon": 128.9120 },
-    { "code": "GN03", "name": "송정동", "lat": 37.7650, "lon": 128.9500 },
-    { "code": "GN04", "name": "교동", "lat": 37.7560, "lon": 128.8840 },
-    { "code": "GN05", "name": "포남동", "lat": 37.7600, "lon": 128.9100 },
-    { "code": "GN06", "name": "경포동", "lat": 37.8000, "lon": 128.9000 }
-  ],
+  "dongs": ["5115052000", "5115058000", "5115059000", "5115055000", "5115057100", "5115066500"],
   "friends": [
     { "id": "minji", "name": "민지" },
     { "id": "junho", "name": "준호" }
   ],
   "replay": [
-    { "tMin": 0,  "gear": "P", "dong": "GN01", "odometerKm": 12000.0, "occupants": 2 },
-    { "tMin": 2,  "gear": "D", "dong": "GN01", "odometerKm": 12000.0, "occupants": 2 },
-    { "tMin": 15, "gear": "P", "dong": "GN02", "odometerKm": 12012.0, "occupants": 2 },
-    { "tMin": 20, "gear": "D", "dong": "GN02", "odometerKm": 12012.0, "occupants": 2 },
-    { "tMin": 35, "gear": "P", "dong": "GN03", "odometerKm": 12030.0, "occupants": 2 },
-    { "tMin": 60, "gear": "D", "dong": "GN03", "odometerKm": 12030.0, "occupants": 2 },
-    { "tMin": 80, "gear": "P", "dong": "GN04", "odometerKm": 12045.0, "occupants": 3 }
+    { "tMin": 0,  "gear": "P", "dong": "5115052000", "odometerKm": 12000.0, "occupants": 2 },
+    { "tMin": 2,  "gear": "D", "dong": "5115052000", "odometerKm": 12000.0, "occupants": 2 },
+    { "tMin": 15, "gear": "P", "dong": "5115058000", "odometerKm": 12012.0, "occupants": 2 },
+    { "tMin": 20, "gear": "D", "dong": "5115058000", "odometerKm": 12012.0, "occupants": 2 },
+    { "tMin": 35, "gear": "P", "dong": "5115059000", "odometerKm": 12030.0, "occupants": 2 },
+    { "tMin": 60, "gear": "D", "dong": "5115059000", "odometerKm": 12030.0, "occupants": 2 },
+    { "tMin": 80, "gear": "P", "dong": "5115055000", "odometerKm": 12045.0, "occupants": 3 }
   ],
   "pastTrips": [
     {
       "daysAgo": 2, "durationMinutes": 150, "startOdometerKm": 11900.0, "endOdometerKm": 11960.0, "fuelCostWon": 9600,
       "stops": [
-        { "dong": "GN06", "startMinute": 30, "stayMinutes": 90, "occupants": 2 }
+        { "dong": "5115066500", "startMinute": 30, "stayMinutes": 90, "occupants": 2 }
       ]
     },
     {
       "daysAgo": 9, "durationMinutes": 200, "startOdometerKm": 11700.0, "endOdometerKm": 11790.0, "fuelCostWon": 14400,
       "stops": [
-        { "dong": "GN02", "startMinute": 20, "stayMinutes": 60, "occupants": 3 },
-        { "dong": "GN03", "startMinute": 110, "stayMinutes": 45, "occupants": 3 }
+        { "dong": "5115058000", "startMinute": 20, "stayMinutes": 60, "occupants": 3 },
+        { "dong": "5115059000", "startMinute": 110, "stayMinutes": 45, "occupants": 3 }
       ]
     },
     {
       "daysAgo": 21, "durationMinutes": 90, "startOdometerKm": 11500.0, "endOdometerKm": 11535.0, "fuelCostWon": 5600,
       "stops": [
-        { "dong": "GN05", "startMinute": 25, "stayMinutes": 40, "occupants": 1 }
+        { "dong": "5115057100", "startMinute": 25, "stayMinutes": 40, "occupants": 1 }
       ]
     }
   ],
   "territories": [
-    { "dong": "GN02", "ownerId": "minji", "scores": { "minji": 480, "junho": 120 } },
-    { "dong": "GN03", "ownerId": "junho", "scores": { "minji": 90, "junho": 300 } },
-    { "dong": "GN06", "ownerId": "minji", "scores": { "minji": 210 } }
+    { "dong": "5115058000", "ownerId": "minji", "scores": { "minji": 480, "junho": 120 } },
+    { "dong": "5115059000", "ownerId": "junho", "scores": { "minji": 90, "junho": 300 } },
+    { "dong": "5115066500", "ownerId": "minji", "scores": { "minji": 210 } }
   ]
 }
