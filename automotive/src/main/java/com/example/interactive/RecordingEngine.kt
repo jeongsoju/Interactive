@@ -31,7 +31,7 @@ import com.example.interactive.shared.vehicle.ReplayVehicleDataSource
 import com.example.interactive.shared.vehicle.VehicleDataSource
 import com.example.interactive.shared.vehicle.VehicleState
 
-enum class AppMode { REPLAY, MANUAL }
+enum class AppMode { REPLAY, MANUAL, REAL }
 
 /** 지금까지 기록된 여행·정차. 임시 화면이 그대로 보여준다 */
 data class RecordSnapshot(
@@ -146,6 +146,11 @@ class RecordingEngine(private val app: Application) {
 
     fun manual(): ManualVehicleDataSource? = source as? ManualVehicleDataSource
 
+    fun real(): RealVehicleDataSource? = source as? RealVehicleDataSource
+
+    /** 위치 권한을 받은 뒤 실제 차 통로가 위치를 읽기 시작하게 한다 */
+    fun onLocationPermissionGranted() = real()?.startLocation()
+
     // 기기 시계는 여기서 시작 시각을 정할 때만 쓴다. 이후 앱의 시간은 모두 VehicleState.nowMillis
     private fun loadSample(): SampleData =
         SampleDataLoader.load(app, System.currentTimeMillis())
@@ -153,12 +158,14 @@ class RecordingEngine(private val app: Application) {
     private fun buildSource() {
         handler.removeCallbacks(ticker)
         source?.setOnChange(null)
+        source?.close()
         val startMillis = System.currentTimeMillis()
         val newSource: VehicleDataSource? = when (mode) {
             AppMode.REPLAY -> ReplayVehicleDataSource(sample.replayTimeline, startMillis, replaySpeed)
             AppMode.MANUAL -> ManualVehicleDataSource(
                 VehicleState(Gear.P, sample.dongs.first().center, 12000.0, 1, startMillis)
             )
+            AppMode.REAL -> RealVehicleDataSource(app)
             null -> null
         }
         source = newSource

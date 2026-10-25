@@ -5,6 +5,11 @@
         android:name="android.hardware.type.automotive"
         android:required="true" />
 
+    <!-- 쓰는 영역의 권한만 선언한다: 기어, 누적거리(Odometer), 좌석(Seat), 위치 -->
+    <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
+    <uses-permission android:name="pleos.car.permission.CAR_DRIVE" />
+    <uses-permission android:name="pleos.car.permission.CAR_SEATS" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
@@ -16,6 +21,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Interactive">
+
+        <uses-library
+            android:name="android.car"
+            android:required="false" />
 
         <!-- distractionOptimized를 선언하지 않는다: 주행 중에는 시스템이 화면을 가린다 -->
         <activity

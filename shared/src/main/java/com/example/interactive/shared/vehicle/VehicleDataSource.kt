@@ -22,4 +22,7 @@ interface VehicleDataSource {
 
     /** 값이 바뀔 때마다 불린다. null이면 해제 */
     fun setOnChange(listener: ((VehicleState) -> Unit)?)
+
+    /** 쓰던 자원을 놓는다. 통로를 갈아 끼울 때 부른다 */
+    fun close() {}
 }

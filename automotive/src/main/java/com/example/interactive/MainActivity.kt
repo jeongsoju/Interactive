@@ -1,6 +1,10 @@
 package com.example.interactive
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -50,7 +54,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         startForegroundService(Intent(this, RecordingService::class.java))
+        val askLocation = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) viewModel.onLocationPermissionGranted()
+        }
         setContent {
+            // 실제 차 모드에서만 위치 권한을 묻는다
+            LaunchedEffect(viewModel.mode) {
+                if (viewModel.mode == AppMode.REAL &&
+                    checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                ) askLocation.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
             InteractiveTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     if (viewModel.choosing) ModeChooser(viewModel) else DebugScreen(viewModel)
@@ -75,6 +88,7 @@ fun ModeChooser(vm: RecordingEngine) {
         Text("어떤 모드로 시작할까요?", style = MaterialTheme.typography.titleLarge)
         ChooserButton("시연 모드", "가짜 여행이 저절로 재생돼요") { pending = AppMode.REPLAY }
         ChooserButton("직접 조작 모드", "버튼으로 기어·위치·시간을 바꿔요") { pending = AppMode.MANUAL }
+        ChooserButton("실제 차 모드", "차(에뮬레이터 Virtual Console)에서 값을 읽어요") { pending = AppMode.REAL }
         if (current != null) {
             OutlinedButton(onClick = vm::hideChooser, modifier = Modifier.fillMaxWidth().heightIn(min = ButtonHeight)) {
                 Text("취소")
@@ -119,7 +133,11 @@ private fun ChooserButton(title: String, caption: String, onClick: () -> Unit) {
     }
 }
 
-private val AppMode.label get() = if (this == AppMode.REPLAY) "시연 모드" else "직접 조작 모드"
+private val AppMode.label get() = when (this) {
+    AppMode.REPLAY -> "시연 모드"
+    AppMode.MANUAL -> "직접 조작 모드"
+    AppMode.REAL -> "실제 차 모드"
+}
 
 // ---- 임시 화면: 지금 차량 값 + 모드별 조작 ----
 
@@ -185,6 +203,7 @@ private fun ControlsBlock(vm: RecordingEngine) {
     when (vm.mode) {
         AppMode.REPLAY -> ReplayControls(vm)
         AppMode.MANUAL -> vm.manual()?.let { ManualPanel(it, vm) }
+        AppMode.REAL -> vm.real()?.let { RealStatus(it) }
         null -> {}
     }
 }
@@ -317,4 +336,14 @@ private fun ChoiceButton(label: String, selected: Boolean, onClick: () -> Unit) 
 @Composable
 private fun ActionButton(label: String, onClick: () -> Unit) {
     OutlinedButton(onClick = onClick, modifier = Modifier.heightIn(min = ButtonHeight)) { Text(label) }
+}
+
+// 임시 화면: 실제 차 모드에서 무엇이 연결됐는지
+@Composable
+private fun RealStatus(real: RealVehicleDataSource) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("실제 차 연결 상태", style = MaterialTheme.typography.titleLarge)
+        Text("주행 규제: ${if (real.uxRestricted) "켜짐(주행 중)" else "꺼짐"}", style = MaterialTheme.typography.bodyLarge)
+        real.notes.forEach { Text("· $it", style = MaterialTheme.typography.bodyMedium) }
+    }
 }

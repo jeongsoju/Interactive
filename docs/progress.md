@@ -2,7 +2,7 @@
 
 > 계정이나 모델이 바뀌어도 여기서부터 이어간다. 단계를 시작할 때 먼저 읽고, 커밋할 때 같이 고친다.
 
-**다음에 할 일:** 6단계 — 실제 차 구현(기어·누적거리·좌석·위치·주행 규제). 시작할 때 5단계 커밋 번호를 위 표에 적는다. 계획을 먼저 보여주고 승인받은 뒤 시작한다.
+**다음에 할 일:** 7단계 — 행정동 경계(강릉) + 위치→동 변환. 시작할 때 6단계 커밋 번호를 위 표에 적는다. 경계 데이터를 받기 전에 출처·라이선스·용량을 보고하고 승인받는다.
 
 ## 15단계 계획 (11/14 제출본)
 
@@ -12,8 +12,8 @@
 | 2 | VehicleDataSource 틀(현재 시각 포함) + Replay(시연 모드, 1/10/60배) + Manual(직접 조작 모드, 접이식 패널) + 모드 선택창·모드 기억 + 샘플 데이터 JSON(assets/sample_data.json, 읽기만) | 화면에서 기어·위치·시각 변화 캡처 3장(docs/screenshots) | 완료 | feature/vehicle-data 5f963eb |
 | 3 | 여행 기록 규칙(P/D 전환, 10분 체류, 3시간 여행 끝) | 단위 테스트 + Replay | 완료 | feature/trip-rules 74dba0f |
 | 4 | 기기 안 저장(Room, 승인됨) | 앱 껐다 켜도 기록 유지 | 완료 | feature/storage 18a0f10 |
-| 5 | 백그라운드 기록 서비스 | D에서 화면 가려져도 기록 계속 | 완료 | feature/service (커밋 번호는 6단계 시작 때 기록) |
-| 6 | 실제 차 구현(기어·누적거리·좌석·위치·주행 규제) | Virtual Console P/D 전환 | 대기 | |
+| 5 | 백그라운드 기록 서비스 | D에서 화면 가려져도 기록 계속 | 완료 | feature/storage c89b34e |
+| 6 | 실제 차 구현(기어·누적거리·좌석·위치·주행 규제) | Virtual Console P/D 전환 | 완료 | feature/real-vehicle (커밋 번호는 7단계 시작 때 기록) |
 | 7 | 행정동 경계(강릉) + 위치→동 변환 | 단위 테스트. 다운로드 전 출처·라이선스·용량 보고 | 대기 | |
 | 8 | 영토 점수 계산(내 점수 + 가짜 친구 민지·준호) | 단위 테스트 | 대기 | |
 | 9 | 지도 탭(MapLibre, 승인됨) + 영토 색 + 강릉 지도 미리 받기 | 캡처 | 대기 | |
@@ -66,3 +66,11 @@
 - `RecordingService`(포그라운드 서비스)가 프로세스를 살려 둔다. 앱을 열 때 시작되고, 상단에 "여행을 기록하고 있어요" 알림이 뜬다. 서비스 종류는 `specialUse`(권한 `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_SPECIAL_USE`). 6단계에서 실제 위치를 읽을 때 종류를 `location`으로 바꿀지 본다.
 - 시연 모드 60배로 재생하다가 뒤로 가기로 화면을 나갔다 20초 뒤 돌아오니 앱 시각이 20분 흘렀고 거리·정차 기록도 이어져 있었다(서비스 foreground 상태는 dumpsys로 확인).
 - 설명회 질문(spec.md): 포그라운드 서비스 허용 여부. 허용 안 되면 시연 외 실제 차에서는 기록이 끊길 수 있다.
+
+## 메모 (6단계에서 정한 것)
+
+- `RealVehicleDataSource`(automotive 모듈): 기어=`CarPropertyManager` GEAR_SELECTION, 주행 규제=`CarUxRestrictionsManager`, 누적거리·좌석=Pleos Vehicle SDK 2.3.2(Odometer·Seat), 위치=`LocationManager`(GPS). 모드 선택창에 "실제 차 모드"를 추가했다. API 이름은 `docs/pleos/vehicle-sdk-api-notes.md`.
+- 에뮬레이터에서 확인됨: 기어·주행 규제·누적거리·좌석 5곳 연결, `adb emu geo fix`로 넣은 위치가 화면에 표시됨. 기어 값 바꾸기는 adb로 안 되고(사용자 빌드 제한) Virtual Console로만 가능.
+- Virtual Console 확인 완료: ① 기어 P↔D가 앱에 반영되고 여행·정차가 기록됨 ② Motion의 Odometer에 9277을 넣자 앱에 `9277.0 km`로 표시 → 누적거리 단위는 km(변환 불필요). 에뮬레이터에서 ACCEL로는 누적거리가 늘지 않아 값을 직접 넣어야 한다.
+- 권한: `CAR_POWERTRAIN`(기어), `CAR_DRIVE`·`CAR_SEATS`(Pleos), `ACCESS_FINE_LOCATION`(실행 중 허용창). 실제 차에서 `CAR_POWERTRAIN`이 서드파티에 허용되는지는 설명회 질문(spec.md).
+- 실제 차 모드에서 처음 상태는 P·0km로 시작하고 값이 오면 갱신된다. D가 odometer보다 먼저 오면 여행 시작 거리가 0으로 잡힐 수 있어, 7단계 이후 필요하면 다듬는다.
