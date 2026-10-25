@@ -28,6 +28,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.interactive.RecordingEngine
 import org.maplibre.android.camera.CameraPosition
+import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
@@ -103,6 +104,13 @@ fun MapScreen(vm: RecordingEngine) {
     LaunchedEffect(styleReady, vm.territories) {
         if (!styleReady) return@LaunchedEffect
         map?.getStyle { it.getSourceAs<GeoJsonSource>(DONG_SOURCE)?.setGeoJson(TerritoryGeoJson.build(vm.dongs, vm.territories)) }
+    }
+    // P 카드의 "영토 보기": 그 동으로 지도를 옮긴다
+    LaunchedEffect(styleReady, vm.focusDong) {
+        val dong = vm.focusDong ?: return@LaunchedEffect
+        if (!styleReady) return@LaunchedEffect
+        map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(dong.center.latitude, dong.center.longitude), 13.0))
+        vm.clearFocus()
     }
     LaunchedEffect(styleReady, vm.state?.location) {
         val location = vm.state?.location

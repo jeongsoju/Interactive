@@ -16,6 +16,11 @@ import com.example.interactive.db.RoutePointRow
 import com.example.interactive.db.clearAll
 import com.example.interactive.db.loadAll
 import com.example.interactive.db.save
+import com.example.interactive.shared.AppConfig
+import com.example.interactive.shared.card.PCard
+import com.example.interactive.shared.card.PCardInput
+import com.example.interactive.shared.card.PCardPicker
+import com.example.interactive.shared.card.estimateFuelCostWon
 import com.example.interactive.shared.model.Dong
 import com.example.interactive.shared.model.DongLocator
 import com.example.interactive.shared.model.Stop
@@ -96,6 +101,20 @@ class RecordingEngine(private val app: Application) {
         private set
 
     private var owners: Map<String, String?> = emptyMap()
+
+    /** 지금 화면에 올릴 P 카드. 기어가 D·R이 되면 바로 사라진다 */
+    var pCard by mutableStateOf<PCard?>(null)
+        private set
+
+    /** "영토 보기"를 눌렀을 때 지도가 가 볼 동. 지도가 한 번 쓰면 비운다 */
+    var focusDong by mutableStateOf<Dong?>(null)
+        private set
+
+    fun dismissCard() { pCard = null }
+
+    fun showDongOnMap(code: String) { focusDong = dongLocator.byCode(code) }
+
+    fun clearFocus() { focusDong = null }
 
     var records by mutableStateOf(RecordSnapshot())
         private set
@@ -195,6 +214,7 @@ class RecordingEngine(private val app: Application) {
         records = RecordSnapshot(recorder.trips, recorder.stops, recorder.discardedStops)
         owners = sample.territories.associate { it.dongCode to it.ownerId }
         territoryChanges = emptyList()
+        pCard = null
         updateTerritories(newSource?.state?.nowMillis ?: startMillis)
         newSource?.let { feedRecorder(it.state) }
         newSource?.setOnChange { feedRecorder(it) }
@@ -210,8 +230,45 @@ class RecordingEngine(private val app: Application) {
         records = RecordSnapshot(recorder.trips, recorder.stops, recorder.discardedStops)
         if (events.isNotEmpty()) scope.launch(writer) { events.forEach { persist(it) } }
         if (events.any { it is TripEvent.StayConfirmed || (it is TripEvent.StopEnded && it.kept) }) {
-            territoryChanges = (updateTerritories(newState.nowMillis) + territoryChanges).take(MAX_CHANGES)
+            val changes = updateTerritories(newState.nowMillis)
+            territoryChanges = (changes + territoryChanges).take(MAX_CHANGES)
+            changes.forEach { change -> morphCard(change) }
         }
+        events.forEach { event ->
+            when (event) {
+                is TripEvent.StopStarted -> pCard = cardFor(event.stop, newState)
+                is TripEvent.StopEnded -> pCard = null // 기어가 D·R이 되는 순간 카드를 숨긴다
+                else -> {}
+            }
+        }
+    }
+
+    private fun friendName(id: String) = sample.friends.firstOrNull { it.id == id }?.name ?: id
+
+    // 영토 변화 카드가 떠 있는 동안 체류가 확정돼 내 땅이 되면, 내용을 한 번만 바꾼다
+    private fun morphCard(change: TerritoryChange) {
+        val card = pCard ?: return
+        val dongName = dongLocator.byCode(change.dongCode)?.name ?: return
+        PCardPicker.confirmed(card, change, dongName, ::friendName)?.let { pCard = it }
+    }
+
+    private fun cardFor(stop: Stop, newState: VehicleState): PCard {
+        val trip = recorder.trips.lastOrNull()
+        val distance = trip?.distanceKm(newState.odometerKm) ?: 0.0
+        val previous = sample.pastTrips.flatMap { it.stops } + recorder.stops.filter { it.id != stop.id }
+        return PCardPicker.pick(
+            PCardInput(
+                stop = stop,
+                dong = stop.dongCode?.let { dongLocator.byCode(it) },
+                myPreviousStops = previous,
+                territory = territories.firstOrNull { it.dongCode == stop.dongCode },
+                tripDistanceKm = distance,
+                tripFuelCostWon = estimateFuelCostWon(
+                    distance, AppConfig.DEFAULT_FUEL_EFFICIENCY_KM_PER_LITER, AppConfig.DEFAULT_FUEL_PRICE_WON_PER_LITER
+                ),
+                friendName = ::friendName,
+            )
+        )
     }
 
     // 내 정차(샘플 지난 여행 + 지금까지 기록)로 내 점수를 구하고, 친구 점수는 샘플 값을 쓴다 (친구는 가짜 데이터)

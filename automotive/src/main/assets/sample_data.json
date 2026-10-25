@@ -36,7 +36,7 @@
   ],
   "territories": [
     { "dong": "5115058000", "ownerId": "minji", "scores": { "minji": 480, "junho": 120 } },
-    { "dong": "5115059000", "ownerId": "junho", "scores": { "minji": 90, "junho": 300 } },
+    { "dong": "5115059000", "ownerId": "junho", "scores": { "minji": 90, "junho": 100 } },
     { "dong": "5115066500", "ownerId": "minji", "scores": { "minji": 210 } }
   ]
 }

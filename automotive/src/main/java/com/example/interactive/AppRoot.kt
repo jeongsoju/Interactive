@@ -35,7 +35,10 @@ fun AppRoot(vm: RecordingEngine) {
     var tab by rememberSaveable { mutableStateOf(Tab.MAP) }
     Box(modifier = Modifier.fillMaxSize()) {
         when (tab) {
-            Tab.MAP -> MapScreen(vm)
+            Tab.MAP -> {
+                MapScreen(vm)
+                PCardOverlay(vm)
+            }
             Tab.RECORDS -> Box(modifier = Modifier.fillMaxSize().padding(bottom = 112.dp)) { DebugScreen(vm) }
         }
         TabBar(tab, onSelect = { tab = it }, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
