@@ -18,7 +18,7 @@ Pleos 공식 문서(https://document.pleos.ai/docs/pleos-only/)를 개발 참고
 | **사전 조사 (2026-10-25, spike 브랜치)** | |
 | [ui-constraints.md](ui-constraints.md) | ⭐ UI 설계할 때 알아야 할 제약 사항 총정리 |
 | [virtual-console.md](virtual-console.md) | Virtual Console 여는 법(클릭 단위), 기어·좌석 바꾸기, 위치 넣기 |
-| [screen-size.md](screen-size.md) | 앱 창 크기 실측(1682×1210dp), FormFactorConsole 사용법 |
+| [screen-size.md](screen-size.md) | 화면 형태 6종 × 세로/가로 앱 창 크기표, FormFactorConsole 사용법 |
 | [ui-design-guide.md](ui-design-guide.md) | 글자 크기 표, 버튼 크기, 색 토큰, 아이콘, 터치 기준 |
 | [vehicle-data-api.md](vehicle-data-api.md) | 기어·좌석·연비·주행거리·위치 읽는 법과 에뮬레이터 결과 |
 | [map-options.md](map-options.md) | GMS 없이 쓸 지도 후보와 확인 방법 |
@@ -26,7 +26,7 @@ Pleos 공식 문서(https://document.pleos.ai/docs/pleos-only/)를 개발 참고
 
 ## 우리 프로젝트와 관련해 눈여겨볼 점
 - Vehicle SDK 버전 표기가 문서마다 다르다: 시작 가이드 의존성 예시는 `2.3.1`, SDK 소개·Sample App 기준은 `2.3.2`. **Maven에는 `2.0.3`, `2.3.2`만 있다 → `2.3.2` 사용** (2026-10-25 확인)
-- 우리가 쓸 권한 후보: `CAR_DRIVE`(Gear·Odometer), `CAR_ENERGY`(EvBattery·Fuel), `CAR_SEATS`(Seat). 기어는 SDK의 `Gear` 도메인으로 읽히지만 공식 문서에는 없다 → [vehicle-data-api.md](vehicle-data-api.md)
+- 우리가 쓸 권한 후보: `CAR_DRIVE`(Gear·Odometer), `CAR_ENERGY`(EvBattery·Fuel), `CAR_SEATS`(Seat). 기어는 AAOS 표준 `GEAR_SELECTION`(권한 `android.car.permission.CAR_POWERTRAIN`)으로 읽기로 결정 → [vehicle-data-api.md](vehicle-data-api.md)
 - `release()`는 콜백이 끝난 뒤, 앱 종료 시점(`onDestroy()` 등)에 호출한다.
 - 화면 방향: `screenOrientation`을 안 정하면 portrait(창 1개), `landscape`로 정하면 창 2개 영역을 쓴다.
 

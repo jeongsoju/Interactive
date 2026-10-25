@@ -25,21 +25,37 @@ vehicle.release()
   - 의존성 `implementation("ai.pleos.playground:Vehicle:2.3.2")`
 - SDK가 스스로 넣는 권한: `ai.pleos.playground.service.vehicle.VEHICLE_BINDING`. 필요한 Vehicle Service는 2.3.13 이상이다.
 
-## 1. 기어 (P/R/N/D)
+## 1. 기어 (P/R/N/D) — **결정: AAOS 표준 `GEAR_SELECTION` 사용** (2026-10-25)
+근거: Pleos API 호환성 문서가 "AAOS Vehicle Property는 `VehiclePropertyIds`·`CarPropertyManager`로 런타임에 지원 여부를 확인해 쓰라"고 안내한다.
+참고 문서: [VehiclePropertyIds](https://developer.android.com/reference/android/car/VehiclePropertyIds), [CarPropertyManager](https://developer.android.com/reference/android/car/hardware/property/CarPropertyManager)
+
 | 항목 | 내용 |
 |---|---|
-| 도메인 | `vehicle.getGear()` → `ai.pleos.playground.vehicle.api.Gear` |
-| 조회 | `getCurrentGearSelectionState(onComplete: (VehicleGear) -> Unit, onFailed: (Exception) -> Unit)` |
-| 변경 알림 | `registerGearSelection(GearSelectionListener)` / `unregisterGearSelection(...)`. 리스너는 `onSelected(VehicleGear)` |
-| 값 | `VehicleGear.GEAR_PARK`, `GEAR_DRIVE`, `GEAR_REVERSE`, `GEAR_NEUTRAL`, `GEAR_UNKNOWN`, `GEAR_1`~`GEAR_9` |
-| 권한 | `pleos.car.permission.CAR_DRIVE` |
-| 에뮬레이터 결과 | ✅ `GEAR_PARK`. Virtual Console에서 D로 바꾸면 `GEAR_DRIVE` |
+| 빌드 설정 | `automotive/build.gradle.kts`의 `android { useLibrary("android.car") }` |
+| 권한 | `android.car.permission.CAR_POWERTRAIN` (매니페스트 선언만, 실행 중 허용 창 없음) |
+| 연결 | `Car.createCar(context)` → `getCarManager(Car.PROPERTY_SERVICE) as CarPropertyManager` |
+| 지원 확인 | `getCarPropertyConfig(VehiclePropertyIds.GEAR_SELECTION)`가 null이 아니면 지원 |
+| 변경 알림 | `registerCallback(callback, VehiclePropertyIds.GEAR_SELECTION, CarPropertyManager.SENSOR_RATE_ONCHANGE)` → `onChangeEvent(CarPropertyValue)`의 `value`(Int). 등록 직후 현재 값이 한 번 온다 |
+| 값 | `VehicleGear.GEAR_PARK`(P), `GEAR_REVERSE`(R), `GEAR_NEUTRAL`(N), `GEAR_DRIVE`(D) |
+| 정리 | `unregisterCallback(callback)` → `car.disconnect()` |
+| 에뮬레이터 결과 | ✅ 지원됨. 시작 시 `P`. Virtual Console에서 D → 즉시 `D`, 다시 P → 즉시 `P` |
 
-⚠️ **Gear 도메인은 공식 문서에 없다.** 문서의 도메인 표(19개)와 API 레퍼런스 목록에 빠져 있고, SDK 2.3.2 파일 안에만 있다.
-CLAUDE.md의 "문서에 있는 것만 쓴다" 규칙과 부딪힌다. 쓸 수 있는 방법은 세 가지다.
-- (a) Pleos 기술지원에 Gear API를 써도 되는지 문의하기 (문서에도 "SDK에 없는 속성은 기술지원 검토 후 사용"이라고 되어 있음)
-- (b) AAOS 표준 `CarPropertyManager`의 `GEAR_SELECTION` 쓰기 (API 호환성 문서가 런타임 확인을 권장)
-- (c) `CarUxRestrictionsManager`의 주행 상태(parked/idling/moving)로 대신 판단하기
+### 정차/주행 상태 (주행 중 화면 숨기기용)
+| 항목 | 내용 |
+|---|---|
+| 연결 | `car.getCarManager(Car.CAR_UX_RESTRICTION_SERVICE) as CarUxRestrictionsManager` |
+| 현재 값 | `currentCarUxRestrictions` |
+| 변경 알림 | `registerListener { restrictions -> }` / `unregisterListener()` |
+| 판단 | `isRequiresDistractionOptimization == true`면 주행 규제 중 → 화면 숨김 |
+| 권한 | 필요 없음 |
+| 에뮬레이터 결과 | ✅ P: `requiresDO=false, active=0x0` / D: `requiresDO=true, active=0x50`. 기어 변경과 거의 동시에(약 20ms 차이) 바뀜 |
+
+- 역할 나누기(결정): **기어(P/D) → 정차 시작·끝 기록, P 카드 띄우기 / UX 규제 → 화면 숨기기**
+- 참고: Pleos Vehicle SDK 2.3.2 안에도 `vehicle.getGear()`(`getCurrentGearSelectionState`, 권한 `pleos.car.permission.CAR_DRIVE`)가 있고 동작한다. 하지만 **공식 문서에 없어서 쓰지 않는다** → 설명회 질문 목록에 올림
+
+### 설명회 질문 목록에 넣을 것
+- Vehicle SDK 2.3.2에 있는 `Gear` 도메인(`getCurrentGearSelectionState`, `registerGearSelection`)이 문서에 없는데, 공식 지원 API인지?
+- AAOS 표준 `CarPropertyManager`(`GEAR_SELECTION`, 권한 `android.car.permission.CAR_POWERTRAIN`)를 3rd-party 앱이 써도 심사에 문제가 없는지?
 
 ## 2. 좌석 탑승 여부
 | 항목 | 내용 |
@@ -92,5 +108,5 @@ CLAUDE.md의 "문서에 있는 것만 쓴다" 규칙과 부딪힌다. 쓸 수 �
 ## 시험 방법 (spike 브랜치)
 - 실험 화면: `automotive/src/main/java/com/example/interactive/spike/SpikeActivity.kt`
 - 실행: `adb shell am start --user 10 -n com.example.interactive/.spike.SpikeActivity`
-- 결과: `adb logcat -s SPIKE:I`
+- 결과: `adb logcat -s SPIKE:I` (기어는 `AAOS_GEAR`, 주행 규제는 `UX` 줄)
 - ⚠️ 에뮬레이터 사용자는 **user 10**이다. 권한 부여도 `adb shell pm grant --user 10 ...`로 해야 한다.

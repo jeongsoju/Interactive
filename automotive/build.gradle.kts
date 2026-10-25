@@ -7,6 +7,8 @@ android {
     compileSdk {
         version = release(37)
     }
+    // AAOS 표준 차량 API(CarPropertyManager, CarUxRestrictionsManager)
+    useLibrary("android.car")
 
     defaultConfig {
         applicationId = "com.example.interactive"

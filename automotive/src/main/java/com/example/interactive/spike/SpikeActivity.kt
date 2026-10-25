@@ -4,6 +4,13 @@ import ai.pleos.playground.vehicle.Vehicle
 import ai.pleos.playground.vehicle.api.model.area.SeatArea
 import ai.pleos.playground.vehicle.constant.area.SeatValue
 import android.app.Activity
+import android.car.Car
+import android.car.VehicleGear
+import android.car.VehiclePropertyIds
+import android.car.drivingstate.CarUxRestrictions
+import android.car.drivingstate.CarUxRestrictionsManager
+import android.car.hardware.CarPropertyValue
+import android.car.hardware.property.CarPropertyManager
 import android.content.res.Configuration
 import android.location.LocationManager
 import android.os.Bundle
@@ -16,6 +23,19 @@ open class SpikeActivity : Activity() {
 
     private lateinit var output: TextView
     private lateinit var vehicle: Vehicle
+    private lateinit var car: Car
+    private var propertyManager: CarPropertyManager? = null
+    private var uxManager: CarUxRestrictionsManager? = null
+
+    private val gearCallback = object : CarPropertyManager.CarPropertyEventCallback {
+        override fun onChangeEvent(value: CarPropertyValue<*>) {
+            show("AAOS_GEAR", gearName(value.value as Int))
+        }
+
+        override fun onErrorEvent(propertyId: Int, areaId: Int) {
+            show("AAOS_GEAR", "ERROR property=$propertyId area=$areaId")
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,6 +46,37 @@ open class SpikeActivity : Activity() {
         vehicle.initialize()
         readVehicle()
         readLocation()
+        readAaos()
+    }
+
+    // 기어는 AAOS 표준 GEAR_SELECTION, 정차/주행 판단은 CarUxRestrictions로 읽는다.
+    private fun readAaos() {
+        car = Car.createCar(this)
+        val pm = car.getCarManager(Car.PROPERTY_SERVICE) as CarPropertyManager
+        propertyManager = pm
+        try {
+            show("AAOS_GEAR_CONFIG", if (pm.getCarPropertyConfig(VehiclePropertyIds.GEAR_SELECTION) == null) "null" else "supported")
+            pm.registerCallback(gearCallback, VehiclePropertyIds.GEAR_SELECTION, CarPropertyManager.SENSOR_RATE_ONCHANGE)
+        } catch (e: Exception) {
+            fail("AAOS_GEAR", e)
+        }
+
+        val ux = car.getCarManager(Car.CAR_UX_RESTRICTION_SERVICE) as CarUxRestrictionsManager
+        uxManager = ux
+        showUx(ux.currentCarUxRestrictions)
+        ux.registerListener { showUx(it) }
+    }
+
+    private fun showUx(r: CarUxRestrictions) {
+        show("UX", "requiresDO=${r.isRequiresDistractionOptimization} active=0x${Integer.toHexString(r.activeRestrictions)}")
+    }
+
+    private fun gearName(gear: Int) = when (gear) {
+        VehicleGear.GEAR_PARK -> "P"
+        VehicleGear.GEAR_REVERSE -> "R"
+        VehicleGear.GEAR_NEUTRAL -> "N"
+        VehicleGear.GEAR_DRIVE -> "D"
+        else -> "OTHER($gear)"
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -93,6 +144,9 @@ open class SpikeActivity : Activity() {
     override fun onDestroy() {
         // 실험용: 화면을 닫을 때 해제. 실제 앱에서는 콜백이 모두 끝난 뒤 release() 해야 한다.
         vehicle.release()
+        propertyManager?.unregisterCallback(gearCallback)
+        uxManager?.unregisterListener()
+        car.disconnect()
         super.onDestroy()
     }
 
