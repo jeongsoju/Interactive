@@ -17,6 +17,9 @@ object AppConfig {
     /** 영토 점수: 방문한 날 하루당 더하는 점수 */
     const val VISIT_DAY_BONUS = 30
 
+    /** 영토 탭: 가장 센 경쟁자 점수가 내 점수의 이 비율 이상이면 '빼앗길 수 있는 땅'으로 본다 (명세서에 숫자가 없어 정한 값) */
+    const val AT_RISK_SCORE_RATIO = 0.8
+
     /** 영토 점수: 체류 1회에서 인정하는 최대 시간 */
     const val MAX_STAY_MINUTES_PER_VISIT = 240
 

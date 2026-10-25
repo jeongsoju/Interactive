@@ -47,6 +47,7 @@ import com.example.interactive.ui.theme.LocalAppColors
 private enum class Tab(val label: String, val icon: TabIcon) {
     MAP("지도", TabIcon.MAP),
     RECORDS("기록", TabIcon.RECORDS),
+    TERRITORY("영토", TabIcon.TERRITORY),
     DEV("개발", TabIcon.DEV), // 임시: 모드 바꾸기·직접 조작 패널. 13단계 설정 탭으로 옮기면 없앤다
 }
 
@@ -75,6 +76,10 @@ fun AppRoot(vm: RecordingEngine) {
             Tab.RECORDS -> {
                 MapScreen(vm, highlight, wide)
                 RecordsPanel(vm, entries, selectedTrip, onSelect = { selectedTrip = it }, wide = wide)
+            }
+            Tab.TERRITORY -> {
+                MapScreen(vm, null, wide)
+                TerritoryPanel(vm, wide)
             }
             Tab.DEV -> Box(modifier = Modifier.fillMaxSize().padding(bottom = 120.dp)) { DebugScreen(vm) }
         }

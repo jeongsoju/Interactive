@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 
-enum class TabIcon { MAP, RECORDS, DEV }
+enum class TabIcon { MAP, RECORDS, TERRITORY, DEV }
 
 /** 탭 막대의 선 아이콘 (24칸 격자에 그린 단순한 선 그림. 아이콘 라이브러리를 쓰지 않는다) */
 @Composable
@@ -36,6 +36,14 @@ fun TabIconView(icon: TabIcon, color: Color, size: Dp) {
                 drawCircle(color, radius = 9 * unit, center = p(12f, 12f), style = stroke)
                 drawLine(color, p(12f, 7f), p(12f, 12f), strokeWidth = stroke.width, cap = StrokeCap.Round)
                 drawLine(color, p(12f, 12f), p(15.5f, 14f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+            }
+            TabIcon.TERRITORY -> {
+                // 깃발: 기둥 + 펄럭이는 천
+                drawLine(color, p(6f, 3f), p(6f, 21f), strokeWidth = stroke.width, cap = StrokeCap.Round)
+                val flag = Path().apply {
+                    moveTo(6 * unit, 4 * unit); lineTo(19 * unit, 4 * unit); lineTo(15 * unit, 8.5f * unit); lineTo(19 * unit, 13 * unit); lineTo(6 * unit, 13 * unit)
+                }
+                drawPath(flag, color, style = stroke)
             }
             TabIcon.DEV -> {
                 // 슬라이더 두 줄

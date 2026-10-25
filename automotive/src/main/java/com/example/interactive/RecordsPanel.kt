@@ -34,7 +34,7 @@ import com.example.interactive.shared.card.formatWon
 import com.example.interactive.shared.model.Stop
 import com.example.interactive.shared.record.TerritoryScorer
 import com.example.interactive.shared.record.TripEntry
-import com.example.interactive.ui.Glass
+import com.example.interactive.ui.SidePanel
 import com.example.interactive.ui.theme.LocalAppColors
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -51,22 +51,8 @@ private val timeFormat = SimpleDateFormat("a h:mm", Locale.KOREA)
 @Composable
 fun RecordsPanel(vm: RecordingEngine, entries: List<TripEntry>, selectedKey: String?, onSelect: (String?) -> Unit, wide: Boolean) {
     val selected = entries.firstOrNull { it.key == selectedKey }
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val panelModifier = if (wide) {
-            Modifier.padding(start = 40.dp, top = 40.dp, bottom = 136.dp).width(640.dp)
-        } else {
-            Modifier.padding(start = 20.dp, end = 20.dp, bottom = 124.dp).fillMaxWidth().heightIn(max = maxHeight * 0.55f)
-        }
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = if (wide) Alignment.TopStart else Alignment.BottomCenter) {
-            Glass(modifier = panelModifier) {
-                Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()).padding(if (wide) 36.dp else 28.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    if (selected == null) TripList(vm, entries, onSelect) else TripDetail(vm, selected) { onSelect(null) }
-                }
-            }
-        }
+    SidePanel(wide) {
+        if (selected == null) TripList(vm, entries, onSelect) else TripDetail(vm, selected) { onSelect(null) }
     }
 }
 
