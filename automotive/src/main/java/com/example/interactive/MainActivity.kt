@@ -5,7 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,7 +31,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.interactive.shared.model.Stop
+import com.example.interactive.shared.sample.SampleDong
 import com.example.interactive.shared.vehicle.Gear
+import com.example.interactive.shared.vehicle.LatLng
 import com.example.interactive.shared.vehicle.ManualVehicleDataSource
 import com.example.interactive.shared.vehicle.VehicleState
 import com.example.interactive.ui.theme.InteractiveTheme
@@ -119,38 +124,103 @@ private val AppMode.label get() = if (this == AppMode.REPLAY) "시연 모드" el
 
 private val timeFormat = SimpleDateFormat("MM/dd HH:mm:ss", Locale.KOREA)
 
+private val WideScreenWidth = 900.dp
+
+fun nearestDongName(location: LatLng?, dongs: List<SampleDong>): String? = location?.let { loc ->
+    dongs.minByOrNull {
+        val dLat = it.center.latitude - loc.latitude
+        val dLon = it.center.longitude - loc.longitude
+        dLat * dLat + dLon * dLon
+    }?.name
+}
+
 @Composable
 fun DebugScreen(vm: VehicleViewModel) {
     val state = vm.state ?: return
-    val sample = vm.sample
-    val nearestDong = state.location?.let { loc ->
-        sample.dongs.minByOrNull {
-            val dLat = it.center.latitude - loc.latitude
-            val dLon = it.center.longitude - loc.longitude
-            dLat * dLat + dLon * dLon
-        }?.name
-    }
+    val spacing = Arrangement.spacedBy(12.dp)
+    val scroll = Modifier.verticalScroll(rememberScrollState())
 
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        if (maxWidth >= WideScreenWidth) {
+            // 가로형: 왼쪽에 값·기록, 오른쪽에 조작 패널을 나란히 둬서 스크롤 없이 다 보이게 한다
+            Row(modifier = Modifier.fillMaxSize().padding(24.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                Column(modifier = Modifier.weight(1f).then(scroll), verticalArrangement = spacing) {
+                    StatusBlock(vm, state)
+                    RecordsBlock(vm, state)
+                }
+                Column(modifier = Modifier.weight(1f).then(scroll), verticalArrangement = spacing) {
+                    ControlsBlock(vm)
+                }
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxSize().then(scroll).padding(24.dp), verticalArrangement = spacing) {
+                StatusBlock(vm, state)
+                ControlsBlock(vm)
+                RecordsBlock(vm, state)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusBlock(vm: VehicleViewModel, state: VehicleState) {
+    val sample = vm.sample
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("${vm.mode?.label}", style = MaterialTheme.typography.headlineMedium)
         OutlinedButton(onClick = vm::showChooser, modifier = Modifier.heightIn(min = ButtonHeight)) {
             Text("모드 바꾸기")
         }
-
-        StateText(state, nearestDong)
+        StateText(state, nearestDongName(state.location, sample.dongs))
         Text(
             "샘플 데이터: 동 ${sample.dongs.size}곳 · 지난 여행 ${sample.pastTrips.size}개 · " +
                 "친구 ${sample.friends.joinToString { it.name }} · 영토 ${sample.territories.size}곳",
             style = MaterialTheme.typography.bodyMedium,
         )
+    }
+}
 
-        when (vm.mode) {
-            AppMode.REPLAY -> ReplayControls(vm)
-            AppMode.MANUAL -> vm.manual()?.let { ManualPanel(it, vm) }
-            null -> {}
+@Composable
+private fun ControlsBlock(vm: VehicleViewModel) {
+    when (vm.mode) {
+        AppMode.REPLAY -> ReplayControls(vm)
+        AppMode.MANUAL -> vm.manual()?.let { ManualPanel(it, vm) }
+        null -> {}
+    }
+}
+
+private val clockFormat = SimpleDateFormat("HH:mm", Locale.KOREA)
+
+// 임시 화면: 지금까지 기록된 여행과 정차
+@Composable
+private fun RecordsBlock(vm: VehicleViewModel, state: VehicleState) {
+    val records = vm.records
+    val now = state.nowMillis
+    fun dong(stop: Stop) = stop.latitude?.let { nearestDongName(LatLng(it, stop.longitude ?: 0.0), vm.sample.dongs) } ?: "위치 없음"
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("여행 기록", style = MaterialTheme.typography.titleLarge)
+        val trip = records.trips.lastOrNull()
+        Text(
+            if (trip == null) "여행 없음 (첫 D를 기다리는 중)"
+            else "여행 ${records.trips.size}개 · " + (if (trip.endMillis == null) "진행 중" else "끝남") +
+                " · 거리 %.1f km".format(trip.distanceKm(state.odometerKm)) +
+                " · 체류 ${records.stops.size}곳 · 버려진 정차 ${records.discarded.size}곳",
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        records.stops.forEach { stop ->
+            val status = when {
+                stop.endMillis == null && stop.isStay(now) -> "체류 확정 (아직 머무는 중)"
+                stop.endMillis == null -> "정차 중 ${stop.stayedMinutes(now)}분"
+                else -> "체류 ${stop.stayedMinutes(now)}분"
+            }
+            Text("• ${dong(stop)} ${clockFormat.format(Date(stop.startMillis))} · $status", style = MaterialTheme.typography.bodyLarge)
+        }
+        records.discarded.forEach { stop ->
+            Text(
+                "• ${dong(stop)} ${clockFormat.format(Date(stop.startMillis))} · 잠깐 멈춤 ${stop.stayedMinutes(now)}분 (버림)",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

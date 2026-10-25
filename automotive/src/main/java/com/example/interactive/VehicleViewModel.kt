@@ -9,6 +9,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import com.example.interactive.shared.model.Stop
+import com.example.interactive.shared.model.Trip
+import com.example.interactive.shared.record.TripRecorder
 import com.example.interactive.shared.sample.SampleData
 import com.example.interactive.shared.vehicle.Gear
 import com.example.interactive.shared.vehicle.ManualVehicleDataSource
@@ -17,6 +20,13 @@ import com.example.interactive.shared.vehicle.VehicleDataSource
 import com.example.interactive.shared.vehicle.VehicleState
 
 enum class AppMode { REPLAY, MANUAL }
+
+/** 지금까지 기록된 여행·정차. 임시 화면이 그대로 보여준다 */
+data class RecordSnapshot(
+    val trips: List<Trip> = emptyList(),
+    val stops: List<Stop> = emptyList(),
+    val discarded: List<Stop> = emptyList(),
+)
 
 private const val TICK_MILLIS = 250L
 private const val PREFS = "interactive"
@@ -48,6 +58,11 @@ class VehicleViewModel(app: Application) : AndroidViewModel(app) {
 
     var replaySpeed by mutableStateOf(1)
         private set
+
+    var records by mutableStateOf(RecordSnapshot())
+        private set
+
+    private var recorder = TripRecorder()
 
     private var lastTickRealtime = 0L
 
@@ -110,11 +125,20 @@ class VehicleViewModel(app: Application) : AndroidViewModel(app) {
         }
         source = newSource
         state = newSource?.state
-        newSource?.setOnChange { state = it }
+        recorder = TripRecorder()
+        records = RecordSnapshot()
+        newSource?.let { feedRecorder(it.state) }
+        newSource?.setOnChange { feedRecorder(it) }
         if (newSource is ReplayVehicleDataSource) {
             lastTickRealtime = SystemClock.elapsedRealtime()
             handler.postDelayed(ticker, TICK_MILLIS)
         }
+    }
+
+    private fun feedRecorder(newState: VehicleState) {
+        state = newState
+        recorder.onState(newState)
+        records = RecordSnapshot(recorder.trips, recorder.stops, recorder.discardedStops)
     }
 
     override fun onCleared() {
