@@ -2,35 +2,15 @@ package com.example.interactive.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-
-// Pleos 디자인 가이드는 색 HEX를 공개하지 않는다. 가이드 그림의 무채색 계열을 근사한 임시 값.
-private val LightColors = lightColorScheme(
-    primary = Color(0xFF43464E),
-    onPrimary = Color.White,
-    background = Color(0xFFF7F8FA),
-    onBackground = Color(0xFF131417),
-    surface = Color.White,
-    onSurface = Color(0xFF131417),
-    onSurfaceVariant = Color(0xFF5C5F66),
-)
-
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFFE3E4E8),
-    onPrimary = Color(0xFF131417),
-    background = Color(0xFF1C1D20),
-    onBackground = Color(0xFFF2F3F5),
-    surface = Color(0xFF131417),
-    onSurface = Color(0xFFF2F3F5),
-    onSurfaceVariant = Color(0xFFA9ACB3),
-)
 
 // Pleos 디자인 가이드 글자 크기 (docs/pleos/ui-design-guide.md)
 private val PleosTypography = Typography(
@@ -48,14 +28,29 @@ private val PleosTypography = Typography(
     labelSmall = TextStyle(fontSize = 20.sp, lineHeight = 24.sp),
 )
 
+private fun materialColors(c: AppColors) = (if (c.dark) darkColorScheme() else lightColorScheme()).let { base ->
+    base.copy(
+        primary = c.primary,
+        onPrimary = Color.White,
+        background = c.land,
+        onBackground = c.text,
+        surface = if (c.dark) Color(0xFF22262F) else Color.White,
+        onSurface = c.text,
+        onSurfaceVariant = c.textSub,
+    )
+}
+
 @Composable
 fun InteractiveTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        typography = PleosTypography,
-        content = content
-    )
+    val colors = if (darkTheme) DarkAppColors else LightAppColors
+    CompositionLocalProvider(LocalAppColors provides colors) {
+        MaterialTheme(
+            colorScheme = materialColors(colors),
+            typography = PleosTypography,
+            content = content
+        )
+    }
 }

@@ -20,7 +20,12 @@ import java.io.File
  */
 object OfflineMap {
 
-    const val STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
+    // 라이트는 positron(연한 회색 바탕), 다크는 dark 스타일. 타일은 같고 스타일·글자 파일만 다르다
+    private const val STYLE_LIGHT = "https://tiles.openfreemap.org/styles/positron"
+    private const val STYLE_DARK = "https://tiles.openfreemap.org/styles/dark"
+    private val STYLES = listOf(STYLE_LIGHT, STYLE_DARK)
+
+    fun styleUrl(dark: Boolean) = if (dark) STYLE_DARK else STYLE_LIGHT
 
     /** 강릉시 경계 전체를 덮는 범위 (남서쪽 위도·경도, 북동쪽 위도·경도) */
     private val GANGNEUNG = LatLngBounds.from(37.918, 129.073, 37.503, 128.580)
@@ -53,30 +58,40 @@ object OfflineMap {
         }
     }
 
+    /** 라이트·다크 스타일이 모두 받아져 있는지 */
     fun hasRegion(context: Context, onResult: (Boolean) -> Unit) {
         OfflineManager.getInstance(context).listOfflineRegions(object : OfflineManager.ListOfflineRegionsCallback {
-            override fun onList(offlineRegions: Array<OfflineRegion>?) = onResult(!offlineRegions.isNullOrEmpty())
+            override fun onList(offlineRegions: Array<OfflineRegion>?) = onResult((offlineRegions?.size ?: 0) >= STYLES.size)
             override fun onError(error: String) = onResult(false)
         })
     }
 
-    /** 강릉 지도를 받는다. 진행 상황을 글자로 알려 주고, 크기 조건을 넘을 것 같으면 멈춘다 */
-    fun download(context: Context, density: Float, onStatus: (String) -> Unit) {
-        val definition = OfflineTilePyramidRegionDefinition(STYLE_URL, GANGNEUNG, 0.0, MAX_ZOOM, density)
+    /**
+     * 강릉 지도를 라이트·다크 스타일 순서로 하나씩 받는다. 진행 상황을 글자로 알려 주고,
+     * 크기 조건을 넘을 것 같으면 멈춘다. 같은 타일은 다시 받지 않는다(이미 저장돼 있으면 재사용).
+     */
+    fun download(context: Context, density: Float, onStatus: (String) -> Unit, index: Int = 0) {
+        if (index >= STYLES.size) {
+            onStatus("모두 완료")
+            return
+        }
+        val label = "${index + 1}/${STYLES.size}"
+        val definition = OfflineTilePyramidRegionDefinition(STYLES[index], GANGNEUNG, 0.0, MAX_ZOOM, density)
         OfflineManager.getInstance(context).createOfflineRegion(
-            definition, "gangneung".toByteArray(),
+            definition, "gangneung-$index".toByteArray(),
             object : OfflineManager.CreateOfflineRegionCallback {
                 override fun onCreate(offlineRegion: OfflineRegion) {
                     offlineRegion.setObserver(object : OfflineRegion.OfflineRegionObserver {
                         override fun onStatusChanged(status: OfflineRegionStatus) {
                             val mb = status.completedResourceSize / 1024.0 / 1024.0
-                            onStatus("받는 중 ${status.completedResourceCount}/${status.requiredResourceCount}개 · %.1fMB".format(mb))
+                            onStatus("$label 받는 중 ${status.completedResourceCount}/${status.requiredResourceCount}개 · %.1fMB".format(mb))
                             if (status.completedResourceSize > SIZE_LIMIT_BYTES && !status.isComplete) {
                                 offlineRegion.setDownloadState(OfflineRegion.STATE_INACTIVE)
                                 onStatus("멈춤: 45MB를 넘어서 중단했어요 (OpenFreeMap 조건 50MB)")
                             } else if (status.isComplete) {
                                 offlineRegion.setDownloadState(OfflineRegion.STATE_INACTIVE)
-                                onStatus("완료 · %.1fMB · 타일 ${status.completedTileCount}개".format(mb))
+                                onStatus("$label 완료 · %.1fMB · 타일 ${status.completedTileCount}개".format(mb))
+                                download(context, density, onStatus, index + 1)
                             }
                         }
 
