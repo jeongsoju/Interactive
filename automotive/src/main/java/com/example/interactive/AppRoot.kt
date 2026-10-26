@@ -1,6 +1,10 @@
 package com.example.interactive
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -126,14 +130,31 @@ private fun MapChips(vm: RecordingEngine, wide: Boolean) {
                 Text("$gearText$place", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = colors.text)
             }
         }
-        Glass(shape = PillShape, modifier = Modifier.align(Alignment.TopEnd)) {
-            Row(
+        // "내 영토 N곳" 칩: 누르면 같은 자리에서 커지며 내 땅의 동 이름만 보여 준다. 다시 누르면 접힌다
+        var expanded by remember { mutableStateOf(false) }
+        val mineNames = vm.territories.filter { it.ownerId == TerritoryScorer.MY_ID }
+            .mapNotNull { vm.dongLocator.byCode(it.dongCode)?.name }.sorted()
+        Glass(
+            shape = if (expanded) RoundedCornerShape(36.dp) else PillShape,
+            modifier = Modifier.align(Alignment.TopEnd).animateContentSize().clickable { expanded = !expanded },
+        ) {
+            Column(
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 18.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Box(modifier = Modifier.size(22.dp).clip(RoundedCornerShape(6.dp)).background(colors.mineLine))
-                Text("내 영토 ${mine}곳", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = colors.text)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(modifier = Modifier.size(22.dp).clip(RoundedCornerShape(6.dp)).background(colors.mineLine))
+                    Text("내 영토 ${mine}곳", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = colors.text)
+                }
+                if (expanded) {
+                    Column(
+                        modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        if (mineNames.isEmpty()) Text("아직 없어요", fontSize = 26.sp, color = colors.textSub)
+                        mineNames.forEach { Text(it, fontSize = 28.sp, color = colors.text) }
+                    }
+                }
             }
         }
     }
