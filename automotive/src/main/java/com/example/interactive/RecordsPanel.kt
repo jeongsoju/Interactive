@@ -51,7 +51,7 @@ private val timeFormat = SimpleDateFormat("a h:mm", Locale.KOREA)
 @Composable
 fun RecordsPanel(vm: RecordingEngine, entries: List<TripEntry>, selectedKey: String?, onSelect: (String?) -> Unit, wide: Boolean) {
     val selected = entries.firstOrNull { it.key == selectedKey }
-    SidePanel(wide) {
+    SidePanel(wide, title = "여행 기록", key = "records") {
         if (selected == null) TripList(vm, entries, onSelect) else TripDetail(vm, selected) { onSelect(null) }
     }
 }
@@ -59,7 +59,6 @@ fun RecordsPanel(vm: RecordingEngine, entries: List<TripEntry>, selectedKey: Str
 @Composable
 private fun TripList(vm: RecordingEngine, entries: List<TripEntry>, onSelect: (String?) -> Unit) {
     val colors = LocalAppColors.current
-    Text("여행 기록", fontSize = 44.sp, fontWeight = FontWeight.Bold, color = colors.text)
     if (entries.isEmpty()) {
         Text("아직 여행이 없어요. 차가 출발하면 자동으로 기록돼요.", fontSize = 28.sp, color = colors.textSub)
         return

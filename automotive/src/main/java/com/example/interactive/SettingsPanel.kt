@@ -42,8 +42,7 @@ fun SettingsPanel(vm: RecordingEngine, wide: Boolean) {
     var confirmDelete by remember { mutableStateOf(false) }
     var showTools by remember { mutableStateOf(false) }
 
-    SidePanel(wide) {
-        Text("설정", fontSize = 44.sp, fontWeight = FontWeight.Bold, color = colors.text)
+    SidePanel(wide, title = "설정", key = "settings") {
 
         Section("차종 (공인연비)")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

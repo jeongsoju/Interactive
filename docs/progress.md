@@ -162,3 +162,5 @@
 
 - 지도 탭 오른쪽 위 "내 영토 N곳" 칩을 누르면 같은 자리에서 커지며 **내 땅의 동 이름만** 목록으로 보인다(많으면 스크롤, 없으면 "아직 없어요"). 다시 누르면 접힌다(`AppRoot.kt`의 `MapChips`). 캡처 `docs/screenshots/map-territory-chip-expanded.png`.
 - 렉 점검: 한때 앱 화면 그리기 CPU가 97%였던 것은 PC 메모리 부족(여유 0.6GB) 때문이었다. 메모리를 확보하자 끊긴 프레임 3~6%, 평균 17ms. 15단계에서 CPU·메모리를 다시 잰다.
+
+- 기록·영토·설정 탭 패널(`ui/SidePanel.kt`)에 제목 줄을 두고, 제목 줄을 누르면 제목만 남기고 접힌다. 제목 옆 꺾쇠가 ▲(펼쳐짐, 누르면 접기) / ▼(접힘, 누르면 더보기)로 바뀐다. 접힘 상태는 패널별(`records`/`territory`/`settings`)로 `LocalCollapsedPanels`에 저장되어 탭을 옮겼다 와도 유지된다(앱을 완전히 껐다 켜면 모두 펼침으로 돌아간다). 제목은 이제 패널 틀이 그리므로 각 탭 안의 제목 글자는 지웠다. 캡처 `docs/screenshots/panel-collapsed.png`.

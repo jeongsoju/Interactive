@@ -40,9 +40,8 @@ fun TerritoryPanel(vm: RecordingEngine, wide: Boolean) {
     fun dongName(code: String) = vm.dongLocator.byCode(code)?.name ?: code
     fun personName(id: String) = if (id == MY_ID) "나" else vm.sample.friends.firstOrNull { it.id == id }?.name ?: id
 
-    SidePanel(wide) {
+    SidePanel(wide, title = "내 영토 ${lands.size}곳", key = "territory") {
         val atRisk = lands.count { it.atRisk }
-        Text("내 영토 ${lands.size}곳", fontSize = 44.sp, fontWeight = FontWeight.Bold, color = colors.text)
         if (atRisk > 0) Text("그중 ${atRisk}곳은 빼앗길 수 있어요", fontSize = 26.sp, color = colors.friendLine, fontWeight = FontWeight.Bold)
         if (lands.isEmpty()) Text("아직 내 땅이 없어요. 한 곳에 10분 넘게 머물면 내 땅이 돼요.", fontSize = 26.sp, color = colors.textSub)
         lands.forEach { land -> LandRow(land, ::dongName, ::personName) { vm.showDongOnMap(land.dongCode) } }

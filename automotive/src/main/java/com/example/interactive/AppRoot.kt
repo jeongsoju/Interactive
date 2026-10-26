@@ -21,6 +21,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +44,7 @@ import com.example.interactive.shared.record.TerritoryScorer
 import com.example.interactive.shared.record.TripEntries
 import com.example.interactive.shared.vehicle.Gear
 import com.example.interactive.ui.Glass
+import com.example.interactive.ui.LocalCollapsedPanels
 import com.example.interactive.ui.PillShape
 import com.example.interactive.ui.TabIcon
 import com.example.interactive.ui.TabIconView
@@ -65,11 +68,13 @@ private val WideScreenWidth = 900.dp
 fun AppRoot(vm: RecordingEngine) {
     var tab by rememberSaveable { mutableStateOf(Tab.MAP) }
     var selectedTrip by rememberSaveable { mutableStateOf<String?>(null) }
+    val collapsedPanels = remember { mutableStateMapOf<String, Boolean>() }
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val wide = maxWidth >= WideScreenWidth
         val entries = remember(vm.sample, vm.records) { TripEntries.build(vm.sample.pastTrips, vm.records.trips, vm.records.stops) }
         // 기록 탭에서 고른 여행만 지도에 경로로 그린다
         val highlight = if (tab == Tab.RECORDS) entries.firstOrNull { it.key == selectedTrip } else null
+        CompositionLocalProvider(LocalCollapsedPanels provides collapsedPanels) {
         when (tab) {
             Tab.MAP -> {
                 MapScreen(vm, null, wide)
@@ -89,6 +94,7 @@ fun AppRoot(vm: RecordingEngine) {
                 MapScreen(vm, null, wide)
                 SettingsPanel(vm, wide)
             }
+        }
         }
         TabBar(tab, wide, onSelect = { tab = it }, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
     }
