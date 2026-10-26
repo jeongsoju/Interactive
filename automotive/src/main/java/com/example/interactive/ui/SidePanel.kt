@@ -1,6 +1,13 @@
 package com.example.interactive.ui
 
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,10 +27,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -53,7 +62,7 @@ fun SidePanel(wide: Boolean, title: String, key: String, content: @Composable Co
             Modifier.padding(start = 20.dp, end = 20.dp, bottom = 124.dp).fillMaxWidth().heightIn(max = maxHeight * 0.55f)
         }
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = if (wide) Alignment.TopStart else Alignment.BottomCenter) {
-            Glass(modifier = panelModifier.animateContentSize()) {
+            Glass(modifier = panelModifier) {
                 Column(modifier = Modifier.padding(pad)) {
                     // 제목 줄: 누르면 접기/펼치기
                     Row(
@@ -64,9 +73,15 @@ fun SidePanel(wide: Boolean, title: String, key: String, content: @Composable Co
                         Text(title, fontSize = 44.sp, fontWeight = FontWeight.Bold, color = colors.text, modifier = Modifier.weight(1f, fill = false))
                         Chevron(down = collapsed, color = colors.textSub)
                     }
-                    if (!collapsed) {
+                    // 접을 때와 펼칠 때 모두 같은 속도로 높이가 변하고 내용이 서서히 나타나고 사라진다
+                    AnimatedVisibility(
+                        visible = !collapsed,
+                        modifier = Modifier.weight(1f, fill = false),
+                        enter = expandVertically(tween(PANEL_MILLIS, easing = FastOutSlowInEasing)) + fadeIn(tween(PANEL_MILLIS, easing = FastOutSlowInEasing)),
+                        exit = shrinkVertically(tween(PANEL_MILLIS, easing = FastOutSlowInEasing)) + fadeOut(tween(PANEL_MILLIS, easing = FastOutSlowInEasing)),
+                    ) {
                         Column(
-                            modifier = Modifier.weight(1f, fill = false).padding(top = 14.dp).verticalScroll(rememberScrollState()),
+                            modifier = Modifier.padding(top = 14.dp).verticalScroll(rememberScrollState()),
                             verticalArrangement = Arrangement.spacedBy(14.dp),
                             content = content,
                         )
@@ -80,15 +95,18 @@ fun SidePanel(wide: Boolean, title: String, key: String, content: @Composable Co
 // 펼침 표시: 접혀 있으면 ▼(눌러서 더보기), 펼쳐져 있으면 ▲(눌러서 접기). 선으로 그린 꺾쇠
 @Composable
 private fun Chevron(down: Boolean, color: Color) {
-    Canvas(modifier = Modifier.padding(start = 16.dp).size(40.dp)) {
+    // ▼ 모양으로 그려 두고, 펼쳐지면 180도 돌려 ▲로 만든다 (패널 움직임과 같은 속도)
+    val angle by animateFloatAsState(if (down) 0f else 180f, tween(PANEL_MILLIS, easing = FastOutSlowInEasing), label = "chevron")
+    Canvas(modifier = Modifier.padding(start = 16.dp).size(40.dp).rotate(angle)) {
         val u = size.width / 24f
         val stroke = Stroke(width = 2.6f * u, cap = StrokeCap.Round, join = StrokeJoin.Round)
-        val topY = if (down) 8f else 16f
-        val tipY = if (down) 16f else 8f
-        drawLine(color, Offset(5f * u, topY * u), Offset(12f * u, tipY * u), strokeWidth = stroke.width, cap = StrokeCap.Round)
-        drawLine(color, Offset(12f * u, tipY * u), Offset(19f * u, topY * u), strokeWidth = stroke.width, cap = StrokeCap.Round)
+        drawLine(color, Offset(5f * u, 8f * u), Offset(12f * u, 16f * u), strokeWidth = stroke.width, cap = StrokeCap.Round)
+        drawLine(color, Offset(12f * u, 16f * u), Offset(19f * u, 8f * u), strokeWidth = stroke.width, cap = StrokeCap.Round)
     }
 }
 
 /** 패널(key)별 접힘 상태. AppRoot가 앱이 떠 있는 동안 유지되는 값을 넣어 준다 */
 val LocalCollapsedPanels = compositionLocalOf<SnapshotStateMap<String, Boolean>> { mutableStateMapOf() }
+
+// 패널을 접고 펼치는 데 걸리는 시간(밀리초). 접을 때와 펼칠 때 같다
+private const val PANEL_MILLIS = 450
