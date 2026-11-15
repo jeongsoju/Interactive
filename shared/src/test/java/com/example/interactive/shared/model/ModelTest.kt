@@ -39,14 +39,18 @@ class ModelTest {
     @Test
     fun tripDistanceFromOdometer() {
         val trip = Trip(id = 1, startMillis = 0, endMillis = null, startOdometerKm = 1000.0,
-            endOdometerKm = null, fuelCostWon = null, isFuelCostEstimated = true, route = emptyList())
+            endOdometerKm = null, startBatteryPercent = 80, endBatteryPercent = null, route = emptyList())
         assertEquals(0.0, trip.distanceKm(), 0.0)
         assertEquals(142.5, trip.distanceKm(currentOdometerKm = 1142.5), 0.001)
         assertEquals(30.0, trip.copy(endOdometerKm = 1030.0).distanceKm(currentOdometerKm = 2000.0), 0.001)
     }
 
     @Test
-    fun defaultFuelPriceComesFromConfig() {
-        assertEquals(1850, Settings(carModel = null, fuelEfficiencyKmPerLiter = null, homeDongCode = null).fuelPriceWonPerLiter)
+    fun batteryUsedIsStartMinusEnd() {
+        val trip = Trip(id = 1, startMillis = 0, endMillis = null, startOdometerKm = 0.0, endOdometerKm = null,
+            startBatteryPercent = 80, endBatteryPercent = null, route = emptyList())
+        assertEquals(5, trip.batteryUsedPercent(currentBatteryPercent = 75))
+        assertEquals(8, trip.copy(endBatteryPercent = 72).batteryUsedPercent(currentBatteryPercent = 10))
+        assertEquals(null, trip.copy(startBatteryPercent = null).batteryUsedPercent(75))
     }
 }

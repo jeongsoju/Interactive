@@ -26,11 +26,8 @@ object AppConfig {
     /** 기어가 P가 된 뒤 이 시간 안에 P 카드를 띄운다 */
     const val CARD_SHOW_WITHIN_MILLIS = 1_000L
 
-    /** 기본 유가(휘발유, 원/L). 설정에서 바꿀 수 있다 */
-    const val DEFAULT_FUEL_PRICE_WON_PER_LITER = 1_850
-
     /**
-     * 공인연비 기본값(km/L). 설정에서 차종을 고르기 전(13단계)까지 연료비 추정에 쓴다.
+     * 공인연비 기본값(km/L). 설정에서 차종을 고르기 전(13단계)까지 연료 사용량 추정에 쓴다.
      * 값은 임시이며, 13단계에서 차종별 공인연비로 대체한다.
      */
     const val DEFAULT_FUEL_EFFICIENCY_KM_PER_LITER = 12.0

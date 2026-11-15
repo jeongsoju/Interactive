@@ -29,8 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.interactive.shared.AppConfig
-import com.example.interactive.shared.card.estimateFuelCostWon
-import com.example.interactive.shared.card.formatWon
+import com.example.interactive.shared.card.energySummary
 import com.example.interactive.shared.model.Stop
 import com.example.interactive.shared.record.TerritoryScorer
 import com.example.interactive.shared.record.TripEntry
@@ -44,7 +43,7 @@ private val dateFormat = SimpleDateFormat("M월 d일 (E)", Locale.KOREA)
 private val timeFormat = SimpleDateFormat("a h:mm", Locale.KOREA)
 
 /**
- * 기록 탭 (docs/spec.md 화면 목록): 여행 목록(날짜별 여행·거리·연료비)과 여행 상세(정차 지점 목록).
+ * 기록 탭 (docs/spec.md 화면 목록): 여행 목록(날짜별 여행·거리·연료/배터리 사용량)과 여행 상세(정차 지점 목록).
  * 여행을 고르면 지도에 경로와 정차 지점이 그려진다(지도는 AppRoot가 뒤에 깔아 둔다).
  * 가로형은 왼쪽 패널, 세로형은 탭 막대 위의 아래 시트.
  */
@@ -135,17 +134,16 @@ private fun StopRow(vm: RecordingEngine, number: Int, stop: Stop) {
     }
 }
 
-// 두 줄: "오후 3:12 – 오후 5:40" / "142 km · 연료비 약 1만 9천 원 (추정) · 들른 곳 3곳"
+// 두 줄: "오후 3:12 – 오후 5:40" / "142 km · 연료 약 10.1L (추정) · 연비 14.0km/L (공인) · 들른 곳 3곳"
+// 전기차 여행은 "142 km · 배터리 18% 사용 · 들른 곳 3곳"
 private fun tripMeta(vm: RecordingEngine, entry: TripEntry, withStops: Boolean): String {
     val trip = entry.trip
     val nowMillis = vm.state?.nowMillis ?: trip.startMillis
     val distance = if (entry.live) trip.distanceKm(vm.state?.odometerKm) else trip.distanceKm()
-    val fuel = trip.fuelCostWon ?: estimateFuelCostWon(
-        distance, vm.settings.efficiency, vm.settings.fuelPriceWonPerLiter
-    )
+    val batteryUsed = trip.batteryUsedPercent(if (entry.live) vm.state?.batteryPercent else null)
     val time = "${timeFormat.format(Date(trip.startMillis))} – " +
         if (entry.live) "지금" else timeFormat.format(Date(trip.endMillis ?: nowMillis))
-    val parts = mutableListOf("%.0f km".format(distance), "연료비 약 ${formatWon(fuel)} (추정)")
+    val parts = mutableListOf("%.0f km".format(distance), energySummary(distance, batteryUsed, vm.settings.efficiency))
     if (withStops) parts += "들른 곳 ${entry.stops.size}곳" else parts += "${entry.stops.size}곳 들름"
     return time + "\n" + parts.joinToString(" · ")
 }

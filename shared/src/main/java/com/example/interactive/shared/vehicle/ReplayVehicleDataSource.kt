@@ -7,6 +7,8 @@ data class ReplayPoint(
     val location: LatLng,
     val odometerKm: Double,
     val occupants: Int,
+    /** 전기차 배터리 %. 없으면 null */
+    val batteryPercent: Int? = null,
 )
 
 /** 시연 모드: 가짜 여행을 시간순으로 재생한다. 앱이 tick()을 주기적으로 불러 시간을 흘린다 */
@@ -53,7 +55,7 @@ class ReplayVehicleDataSource(
         val cur = timeline[index]
         val next = timeline.getOrNull(index + 1)
         if (next == null || elapsed <= cur.tSec * 1000) {
-            return VehicleState(cur.gear, cur.location, cur.odometerKm, cur.occupants, now)
+            return VehicleState(cur.gear, cur.location, cur.odometerKm, cur.occupants, now, cur.batteryPercent)
         }
         val ratio = (elapsed - cur.tSec * 1000).toDouble() / ((next.tSec - cur.tSec) * 1000)
         fun mix(a: Double, b: Double) = a + (b - a) * ratio
@@ -66,6 +68,9 @@ class ReplayVehicleDataSource(
             odometerKm = mix(cur.odometerKm, next.odometerKm),
             occupants = cur.occupants,
             nowMillis = now,
+            batteryPercent = if (cur.batteryPercent != null && next.batteryPercent != null)
+                Math.round(mix(cur.batteryPercent.toDouble(), next.batteryPercent.toDouble())).toInt()
+            else cur.batteryPercent,
         )
     }
 }

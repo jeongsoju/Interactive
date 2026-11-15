@@ -20,7 +20,7 @@ import com.example.interactive.shared.AppConfig
 import com.example.interactive.shared.card.PCard
 import com.example.interactive.shared.card.PCardInput
 import com.example.interactive.shared.card.PCardPicker
-import com.example.interactive.shared.card.estimateFuelCostWon
+import com.example.interactive.shared.card.energySummary
 import com.example.interactive.shared.model.Dong
 import com.example.interactive.shared.model.DongLocator
 import com.example.interactive.shared.model.Settings
@@ -278,8 +278,8 @@ class RecordingEngine(private val app: Application) {
                 myPreviousStops = previous,
                 territory = territories.firstOrNull { it.dongCode == stop.dongCode },
                 tripDistanceKm = distance,
-                tripFuelCostWon = estimateFuelCostWon(
-                    distance, settings.efficiency, settings.fuelPriceWonPerLiter
+                tripEnergySummary = energySummary(
+                    distance, trip?.batteryUsedPercent(newState.batteryPercent), settings.efficiency
                 ),
                 friendName = ::friendName,
             )

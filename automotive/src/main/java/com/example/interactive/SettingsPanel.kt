@@ -55,13 +55,7 @@ fun SettingsPanel(vm: RecordingEngine, wide: Boolean) {
                 " (예시 값, 공식 값 아님)",
         )
 
-        Section("유가 (휘발유)")
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Pill("− 50원", selected = false) { vm.changeSettings { withPriceChange(-50) } }
-            Text("%,d원/L".format(settings.fuelPriceWonPerLiter), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = colors.text)
-            Pill("+ 50원", selected = false) { vm.changeSettings { withPriceChange(50) } }
-        }
-        Hint("연료비 = 달린 거리 ÷ 공인연비 × 유가. 화면에는 (추정)으로 표시해요.")
+        Hint("연료 사용량 = 달린 거리 ÷ 공인연비. 화면에는 (추정)으로 표시해요. 전기차는 배터리 사용량(%)을 보여 줘요.")
 
         Section("우리 집 동네")
         Hint("여기서 머문 시간은 영토 점수에 넣지 않아요.")

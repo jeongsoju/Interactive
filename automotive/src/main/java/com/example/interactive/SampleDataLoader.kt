@@ -38,6 +38,7 @@ object SampleDataLoader {
                 location = dongByCode.getValue(it.getString("dong")).center,
                 odometerKm = it.getDouble("odometerKm"),
                 occupants = it.getInt("occupants"),
+                batteryPercent = it.optIntOrNull("batteryPercent"),
             )
         }
 
@@ -51,8 +52,8 @@ object SampleDataLoader {
                 endMillis = start + t.getLong("durationMinutes") * MINUTE_MILLIS,
                 startOdometerKm = t.getDouble("startOdometerKm"),
                 endOdometerKm = t.getDouble("endOdometerKm"),
-                fuelCostWon = t.getInt("fuelCostWon"),
-                isFuelCostEstimated = true,
+                startBatteryPercent = t.optIntOrNull("startBatteryPercent"),
+                endBatteryPercent = t.optIntOrNull("endBatteryPercent"),
                 route = emptyList(),
             )
             val stops = t.getJSONArray("stops").map {
@@ -83,6 +84,8 @@ object SampleDataLoader {
 
         return SampleData(dongs, friends, replay, pastTrips, territories)
     }
+
+    private fun JSONObject.optIntOrNull(key: String): Int? = if (has(key)) getInt(key) else null
 
     private inline fun <T> JSONArray.map(transform: (JSONObject) -> T): List<T> =
         List(length()) { transform(getJSONObject(it)) }

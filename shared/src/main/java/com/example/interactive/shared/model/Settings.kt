@@ -23,21 +23,14 @@ object CarModels {
 data class Settings(
     val carModel: String?,
     val fuelEfficiencyKmPerLiter: Double?,
-    val fuelPriceWonPerLiter: Int = AppConfig.DEFAULT_FUEL_PRICE_WON_PER_LITER,
     val homeDongCode: String?,
 ) {
-    /** 연료비 계산에 쓰는 연비. 차종을 안 골랐으면 기본값 */
+    /** 연료 사용량 계산에 쓰는 연비(공인). 차종을 안 골랐으면 기본값 */
     val efficiency: Double get() = fuelEfficiencyKmPerLiter ?: AppConfig.DEFAULT_FUEL_EFFICIENCY_KM_PER_LITER
 
     fun withCar(car: CarModel) = copy(carModel = car.name, fuelEfficiencyKmPerLiter = car.kmPerLiter)
 
-    /** 유가를 delta원만큼 바꾼다. 너무 낮거나 높은 값은 막는다 */
-    fun withPriceChange(delta: Int) =
-        copy(fuelPriceWonPerLiter = (fuelPriceWonPerLiter + delta).coerceIn(MIN_PRICE, MAX_PRICE))
-
     companion object {
-        const val MIN_PRICE = 1_000
-        const val MAX_PRICE = 3_000
         val DEFAULT = Settings(carModel = null, fuelEfficiencyKmPerLiter = null, homeDongCode = null)
     }
 }

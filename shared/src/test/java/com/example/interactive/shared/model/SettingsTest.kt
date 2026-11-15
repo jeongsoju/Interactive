@@ -20,14 +20,6 @@ class SettingsTest {
     }
 
     @Test
-    fun priceChangesInStepsAndStaysInRange() {
-        val s = Settings.DEFAULT
-        assertEquals(1_900, s.withPriceChange(50).fuelPriceWonPerLiter)
-        assertEquals(Settings.MIN_PRICE, s.withPriceChange(-100_000).fuelPriceWonPerLiter)
-        assertEquals(Settings.MAX_PRICE, s.withPriceChange(100_000).fuelPriceWonPerLiter)
-    }
-
-    @Test
     fun exampleCarsHaveDistinctNamesAndSaneEfficiency() {
         assertEquals(CarModels.examples.size, CarModels.examples.map { it.name }.toSet().size)
         assertTrue(CarModels.examples.all { it.kmPerLiter in 5.0..30.0 })

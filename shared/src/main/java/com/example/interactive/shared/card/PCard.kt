@@ -33,7 +33,8 @@ data class PCardInput(
     val myPreviousStops: List<Stop>,
     val territory: Territory?,
     val tripDistanceKm: Double,
-    val tripFuelCostWon: Int,
+    /** 이번 여행 에너지 사용 한 줄 (energySummary) */
+    val tripEnergySummary: String,
     val friendName: (String) -> String,
     val zone: ZoneId = ZoneId.systemDefault(),
 )
@@ -80,7 +81,7 @@ object PCardPicker {
         kind = PCardKind.TRIP_SUMMARY,
         dongCode = input.dong?.code,
         title = "이번 여행",
-        body = "지금까지 ${"%.0f".format(Locale.KOREA, input.tripDistanceKm)}km, 연료비 약 ${formatWon(input.tripFuelCostWon)} (추정)",
+        body = "지금까지 ${"%.0f".format(Locale.KOREA, input.tripDistanceKm)}km, ${input.tripEnergySummary}",
     )
 
     /**

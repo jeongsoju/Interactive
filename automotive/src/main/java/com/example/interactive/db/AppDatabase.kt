@@ -22,8 +22,8 @@ data class TripRow(
     val endMillis: Long?,
     val startOdometerKm: Double,
     val endOdometerKm: Double?,
-    val fuelCostWon: Int?,
-    val isFuelCostEstimated: Boolean,
+    val startBatteryPercent: Int?,
+    val endBatteryPercent: Int?,
 )
 
 @Entity(tableName = "stop")
@@ -82,7 +82,8 @@ interface RecordDao {
 
 @Database(
     entities = [TripRow::class, StopRow::class, RoutePointRow::class],
-    version = 1,
+    // 2: 연료비(원) 대신 배터리 %를 저장. 제출 전 개발 기록뿐이라 옛 기록은 지우고 새로 만든다
+    version = 2,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -90,7 +91,9 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         fun create(context: Context): AppDatabase =
-            Room.databaseBuilder(context, AppDatabase::class.java, "interactive.db").build()
+            Room.databaseBuilder(context, AppDatabase::class.java, "interactive.db")
+                .fallbackToDestructiveMigration(dropAllTables = true)
+                .build()
     }
 }
 
@@ -101,7 +104,7 @@ suspend fun RecordDao.loadAll(): Pair<List<Trip>, List<Stop>> {
         Trip(
             id = t.id, startMillis = t.startMillis, endMillis = t.endMillis,
             startOdometerKm = t.startOdometerKm, endOdometerKm = t.endOdometerKm,
-            fuelCostWon = t.fuelCostWon, isFuelCostEstimated = t.isFuelCostEstimated,
+            startBatteryPercent = t.startBatteryPercent, endBatteryPercent = t.endBatteryPercent,
             route = points[t.id].orEmpty().map { RoutePoint(it.timeMillis, it.latitude, it.longitude) },
         )
     }
@@ -118,7 +121,7 @@ suspend fun RecordDao.loadAll(): Pair<List<Trip>, List<Stop>> {
 suspend fun RecordDao.save(trip: Trip) = saveTrip(
     TripRow(
         trip.id, trip.startMillis, trip.endMillis, trip.startOdometerKm, trip.endOdometerKm,
-        trip.fuelCostWon, trip.isFuelCostEstimated,
+        trip.startBatteryPercent, trip.endBatteryPercent,
     )
 )
 

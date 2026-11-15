@@ -5,30 +5,30 @@
     { "id": "junho", "name": "준호" }
   ],
   "replay": [
-    { "tMin": 0,  "gear": "P", "dong": "5115052000", "odometerKm": 12000.0, "occupants": 2 },
-    { "tMin": 2,  "gear": "D", "dong": "5115052000", "odometerKm": 12000.0, "occupants": 2 },
-    { "tMin": 15, "gear": "P", "dong": "5115058000", "odometerKm": 12012.0, "occupants": 2 },
-    { "tMin": 20, "gear": "D", "dong": "5115058000", "odometerKm": 12012.0, "occupants": 2 },
-    { "tMin": 35, "gear": "P", "dong": "5115059000", "odometerKm": 12030.0, "occupants": 2 },
-    { "tMin": 60, "gear": "D", "dong": "5115059000", "odometerKm": 12030.0, "occupants": 2 },
-    { "tMin": 80, "gear": "P", "dong": "5115055000", "odometerKm": 12045.0, "occupants": 3 }
+    { "tMin": 0,  "gear": "P", "dong": "5115052000", "odometerKm": 12000.0, "occupants": 2, "batteryPercent": 80 },
+    { "tMin": 2,  "gear": "D", "dong": "5115052000", "odometerKm": 12000.0, "occupants": 2, "batteryPercent": 80 },
+    { "tMin": 15, "gear": "P", "dong": "5115058000", "odometerKm": 12012.0, "occupants": 2, "batteryPercent": 78 },
+    { "tMin": 20, "gear": "D", "dong": "5115058000", "odometerKm": 12012.0, "occupants": 2, "batteryPercent": 78 },
+    { "tMin": 35, "gear": "P", "dong": "5115059000", "odometerKm": 12030.0, "occupants": 2, "batteryPercent": 75 },
+    { "tMin": 60, "gear": "D", "dong": "5115059000", "odometerKm": 12030.0, "occupants": 2, "batteryPercent": 75 },
+    { "tMin": 80, "gear": "P", "dong": "5115055000", "odometerKm": 12045.0, "occupants": 3, "batteryPercent": 72 }
   ],
   "pastTrips": [
     {
-      "daysAgo": 2, "durationMinutes": 150, "startOdometerKm": 11900.0, "endOdometerKm": 11960.0, "fuelCostWon": 9600,
+      "daysAgo": 2, "durationMinutes": 150, "startOdometerKm": 11900.0, "endOdometerKm": 11960.0, "startBatteryPercent": 90, "endBatteryPercent": 78,
       "stops": [
         { "dong": "5115066500", "startMinute": 30, "stayMinutes": 90, "occupants": 2 }
       ]
     },
     {
-      "daysAgo": 9, "durationMinutes": 200, "startOdometerKm": 11700.0, "endOdometerKm": 11790.0, "fuelCostWon": 14400,
+      "daysAgo": 9, "durationMinutes": 200, "startOdometerKm": 11700.0, "endOdometerKm": 11790.0, "startBatteryPercent": 95, "endBatteryPercent": 77,
       "stops": [
         { "dong": "5115058000", "startMinute": 20, "stayMinutes": 60, "occupants": 3 },
         { "dong": "5115059000", "startMinute": 110, "stayMinutes": 45, "occupants": 3 }
       ]
     },
     {
-      "daysAgo": 21, "durationMinutes": 90, "startOdometerKm": 11500.0, "endOdometerKm": 11535.0, "fuelCostWon": 5600,
+      "daysAgo": 21, "durationMinutes": 90, "startOdometerKm": 11500.0, "endOdometerKm": 11535.0, "startBatteryPercent": 70, "endBatteryPercent": 63,
       "stops": [
         { "dong": "5115057100", "startMinute": 25, "stayMinutes": 40, "occupants": 1 }
       ]

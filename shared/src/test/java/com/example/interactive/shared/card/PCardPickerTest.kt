@@ -32,7 +32,7 @@ class PCardPickerTest {
         previous: List<Stop> = emptyList(),
         territory: Territory? = null,
         dong: Dong? = this.dong,
-    ) = PCardInput(parked, dong, previous, territory, 12.4, 19_040, { names.getValue(it) }, ZoneOffset.UTC)
+    ) = PCardInput(parked, dong, previous, territory, 12.4, energySummary(12.4, null, 14.0), { names.getValue(it) }, ZoneOffset.UTC)
 
     private val territoryCardInput
         get() = input(listOf(past("A", 3, 20)), Territory("A", "minji", mapOf("minji" to 80, MY_ID to 50)))
@@ -71,7 +71,7 @@ class PCardPickerTest {
     fun visitedDongOrNoDongFallsBackToTripSummary() {
         val visited = PCardPicker.pick(input(listOf(past("A", 2, 30)), Territory("A", MY_ID, mapOf(MY_ID to 60))))
         assertEquals(PCardKind.TRIP_SUMMARY, visited.kind)
-        assertEquals("지금까지 12km, 연료비 약 1만 9천 원 (추정)", visited.body)
+        assertEquals("지금까지 12km, 연료 약 0.9L (추정) · 연비 14.0km/L (공인)", visited.body)
         assertEquals(PCardKind.TRIP_SUMMARY, PCardPicker.pick(input(dong = null)).kind)
     }
 
@@ -104,11 +104,9 @@ class PCardPickerTest {
     }
 
     @Test
-    fun wonIsReadable() {
-        assertEquals("1만 9천 원", formatWon(19_040))
-        assertEquals("4만 2천 원", formatWon(42_000))
-        assertEquals("3만 원", formatWon(30_000))
-        assertEquals("8,500원", formatWon(8_540))
-        assertEquals(1_850, estimateFuelCostWon(12.0, 12.0, 1_850))
+    fun energySummaryShowsFuelOrBattery() {
+        assertEquals(10.0, estimateFuelLiters(140.0, 14.0), 1e-9)
+        assertEquals("연료 약 10.0L (추정) · 연비 14.0km/L (공인)", energySummary(140.0, null, 14.0))
+        assertEquals("배터리 5% 사용", energySummary(140.0, 5, 14.0))
     }
 }

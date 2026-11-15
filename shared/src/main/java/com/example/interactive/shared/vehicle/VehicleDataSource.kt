@@ -14,6 +14,8 @@ data class VehicleState(
     val odometerKm: Double,
     val occupants: Int,
     val nowMillis: Long,
+    /** 전기차 배터리 %. 내연기관이거나 읽을 수 없으면 null */
+    val batteryPercent: Int? = null,
 )
 
 /** 차량 데이터가 흘러나오는 통로. 시연(Replay)·직접 조작(Manual)·실제 차(Real, 6단계)가 구현한다 */

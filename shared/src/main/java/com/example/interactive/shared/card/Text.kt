@@ -1,6 +1,6 @@
 package com.example.interactive.shared.card
 
-import kotlin.math.roundToInt
+import java.util.Locale
 
 /** 한국어 조사 고르기. 마지막 글자에 받침이 있으면 첫 번째, 없으면 두 번째 */
 object Korean {
@@ -13,18 +13,17 @@ object Korean {
     fun iGa(word: String) = word + if (hasFinalConsonant(word)) "이" else "가"
 }
 
-/** 연료비 추정: 거리 ÷ 연비 × 유가 (docs/spec.md F1) */
-fun estimateFuelCostWon(distanceKm: Double, kmPerLiter: Double, wonPerLiter: Int): Int =
-    (distanceKm / kmPerLiter * wonPerLiter).roundToInt()
+/** 연료 사용량 추정(L) = 거리 ÷ 연비 (docs/spec.md F1) */
+fun estimateFuelLiters(distanceKm: Double, kmPerLiter: Double): Double = distanceKm / kmPerLiter
 
-/** 1만 9천 원, 4만 2천 원, 8,500원 처럼 읽기 쉽게. 100원 단위로 반올림한다 */
-fun formatWon(won: Int): String {
-    val rounded = (won / 100.0).roundToInt() * 100
-    val man = rounded / 10_000
-    val cheon = rounded % 10_000 / 1_000
-    return when {
-        man > 0 && cheon > 0 -> "${man}만 ${cheon}천 원"
-        man > 0 -> "${man}만 원"
-        else -> "%,d원".format(rounded)
-    }
-}
+/**
+ * 여행의 에너지 사용 한 줄 (docs/spec.md F1). 전기차(배터리 % 있음)는 "배터리 5% 사용",
+ * 내연기관은 "연료 약 3.2L (추정) · 연비 14.0km/L (공인)". 차가 주는 연비 값은 아직 읽지 않아 늘 공인연비다.
+ */
+fun energySummary(distanceKm: Double, batteryUsedPercent: Int?, kmPerLiter: Double): String =
+    if (batteryUsedPercent != null) "배터리 ${batteryUsedPercent}% 사용"
+    else "연료 약 ${formatLiters(estimateFuelLiters(distanceKm, kmPerLiter))} (추정) · 연비 ${formatKmPerLiter(kmPerLiter)} (공인)"
+
+fun formatLiters(liters: Double) = "%.1fL".format(Locale.KOREA, liters)
+
+fun formatKmPerLiter(kmPerLiter: Double) = "%.1fkm/L".format(Locale.KOREA, kmPerLiter)

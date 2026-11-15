@@ -29,8 +29,9 @@ import androidx.compose.ui.unit.sp
 import com.example.interactive.shared.AppConfig
 import com.example.interactive.shared.card.PCard
 import com.example.interactive.shared.card.PCardKind
-import com.example.interactive.shared.card.estimateFuelCostWon
-import com.example.interactive.shared.card.formatWon
+import com.example.interactive.shared.card.estimateFuelLiters
+import com.example.interactive.shared.card.formatKmPerLiter
+import com.example.interactive.shared.card.formatLiters
 import com.example.interactive.shared.vehicle.Gear
 import com.example.interactive.ui.Glass
 import com.example.interactive.ui.theme.LocalAppColors
@@ -132,7 +133,7 @@ private fun CardView(card: PCard, header: String, stayedMinutes: Int, wide: Bool
     }
 }
 
-// "이번 여행": 지금까지 거리·운전 시간·들른 곳·연료비(추정). 가로형에서만 카드 아래에 보인다
+// "이번 여행": 지금까지 거리·운전 시간·들른 곳·연료 사용량과 연비(전기차는 배터리 사용량). 가로형에서만 카드 아래에 보인다
 @Composable
 private fun TripSummary(vm: RecordingEngine) {
     val colors = LocalAppColors.current
@@ -142,7 +143,8 @@ private fun TripSummary(vm: RecordingEngine) {
     val stops = vm.records.stops.filter { it.tripId == trip.id }
     val parkedMinutes = stops.sumOf { it.stayedMinutes(state.nowMillis) }
     val driveMinutes = ((state.nowMillis - trip.startMillis) / 60_000L - parkedMinutes).coerceAtLeast(0)
-    val fuel = estimateFuelCostWon(distance, vm.settings.efficiency, vm.settings.fuelPriceWonPerLiter)
+    val batteryUsed = trip.batteryUsedPercent(state.batteryPercent)
+    val efficiency = vm.settings.efficiency
 
     Glass(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(40.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -153,7 +155,13 @@ private fun TripSummary(vm: RecordingEngine) {
             }
             Row(modifier = Modifier.fillMaxWidth()) {
                 Stat("들른 곳", "${stops.size}곳", Modifier.weight(1f))
-                Stat("연료비 (추정)", "약 ${formatWon(fuel)}", Modifier.weight(1f))
+                if (batteryUsed != null) Stat("배터리 사용", "$batteryUsed%", Modifier.weight(1f))
+                else Stat("연료 사용 (추정)", "약 ${formatLiters(estimateFuelLiters(distance, efficiency))}", Modifier.weight(1f))
+            }
+            if (batteryUsed == null) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Stat("연비 (공인)", formatKmPerLiter(efficiency), Modifier.weight(1f))
+                }
             }
         }
     }

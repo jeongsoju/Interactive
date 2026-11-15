@@ -11,7 +11,6 @@ class SettingsStore(context: Context) {
     fun load(): Settings = Settings(
         carModel = prefs.getString(KEY_CAR, null),
         fuelEfficiencyKmPerLiter = if (prefs.contains(KEY_EFFICIENCY)) prefs.getFloat(KEY_EFFICIENCY, 0f).toDouble() else null,
-        fuelPriceWonPerLiter = prefs.getInt(KEY_PRICE, Settings.DEFAULT.fuelPriceWonPerLiter),
         homeDongCode = prefs.getString(KEY_HOME, null),
     )
 
@@ -19,7 +18,6 @@ class SettingsStore(context: Context) {
         prefs.edit().apply {
             putString(KEY_CAR, settings.carModel)
             settings.fuelEfficiencyKmPerLiter?.let { putFloat(KEY_EFFICIENCY, it.toFloat()) } ?: remove(KEY_EFFICIENCY)
-            putInt(KEY_PRICE, settings.fuelPriceWonPerLiter)
             putString(KEY_HOME, settings.homeDongCode)
         }.apply()
     }
@@ -28,7 +26,6 @@ class SettingsStore(context: Context) {
         const val FILE = "settings"
         const val KEY_CAR = "car"
         const val KEY_EFFICIENCY = "efficiency"
-        const val KEY_PRICE = "price"
         const val KEY_HOME = "home"
     }
 }

@@ -13,7 +13,7 @@ import org.junit.Test
 class TripEntriesTest {
 
     private fun trip(id: Long, start: Long, end: Long?, route: List<RoutePoint> = emptyList()) =
-        Trip(id, start, end, 100.0, end?.let { 150.0 }, null, true, route)
+        Trip(id, start, end, 100.0, end?.let { 150.0 }, null, null, route)
 
     private fun stop(id: Long, tripId: Long, start: Long, lat: Double?, lon: Double? = 128.9) =
         Stop(id, tripId, lat, lon, "D$id", start, start + 1_000, 1)

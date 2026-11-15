@@ -54,6 +54,7 @@ class TripRecorder(
     private var openStop: Stop? = null
     private var stayConfirmed = false
     private var parkOdometerKm = 0.0
+    private var parkBatteryPercent: Int? = null
     private var lastRouteMillis = 0L
     private var syncParkOdometer = false
     private var nextTripId = 1L
@@ -80,6 +81,7 @@ class TripRecorder(
         val events = mutableListOf<TripEvent>()
         if (syncParkOdometer) {
             parkOdometerKm = state.odometerKm // 복원 직후: 주차 중이니 지금 값이 곧 주차 때 값
+            parkBatteryPercent = state.batteryPercent
             syncParkOdometer = false
         }
         checkTime(state, events)
@@ -136,13 +138,14 @@ class TripRecorder(
             endMillis = null,
             startOdometerKm = state.odometerKm,
             endOdometerKm = null,
-            fuelCostWon = null,
-            isFuelCostEstimated = true,
+            startBatteryPercent = state.batteryPercent,
+            endBatteryPercent = null,
             route = emptyList(),
         )
         trips = trips + trip
         tripActive = true
         parkOdometerKm = state.odometerKm
+        parkBatteryPercent = state.batteryPercent
         lastRouteMillis = 0L // 시작하자마자 첫 점을 남긴다
         events += TripEvent.TripStarted(trip)
     }
@@ -162,6 +165,7 @@ class TripRecorder(
         openStop = stop
         stayConfirmed = false
         parkOdometerKm = state.odometerKm
+        parkBatteryPercent = state.batteryPercent
         events += TripEvent.StopStarted(stop)
     }
 
@@ -177,10 +181,10 @@ class TripRecorder(
         events += TripEvent.StopEnded(closed, kept)
     }
 
-    // 여행의 끝 시각·끝 주행거리는 마지막으로 P가 된 때의 값
+    // 여행의 끝 시각·끝 주행거리·끝 배터리는 마지막으로 P가 된 때의 값
     private fun endTrip(lastParkMillis: Long, events: MutableList<TripEvent>) {
         val last = trips.last()
-        val ended = last.copy(endMillis = lastParkMillis, endOdometerKm = parkOdometerKm)
+        val ended = last.copy(endMillis = lastParkMillis, endOdometerKm = parkOdometerKm, endBatteryPercent = parkBatteryPercent)
         trips = trips.dropLast(1) + ended
         tripActive = false
         events += TripEvent.TripEnded(ended)
