@@ -2,7 +2,7 @@
 
 > 계정이나 모델이 바뀌어도 여기서부터 이어간다. 단계를 시작할 때 먼저 읽고, 커밋할 때 같이 고친다.
 
-**다음에 할 일:** 15단계 — 제출용 release APK(디버깅 끔, 서명, MapLibre CPU 종류 x86_64·arm64-v8a만) + Wipe Data 뒤 새로 설치해 시연 모드 확인 + 실행 시간·메모리 측정. 서명 키(keystore)는 저장소 밖에 두고 비밀번호는 사용자에게 받는다(마감일이라 사용자가 단계마다 승인 없이 커밋·push하도록 지시함).
+**다음에 할 일:** 제출 끝. 다음은 12/3 시연 준비(명세서 "12/3 시연" 열). 시작할 때 15단계 커밋 번호를 위 표에 적는다.
 
 ## 15단계 계획 (11/14 제출본)
 
@@ -174,3 +174,14 @@
 - 시연 모드 가짜 여행(`sample_data.json` replay)과 지난 여행 3개에 배터리 %를 넣었다(재생 80% → 72%). 실제 차·직접 조작 모드는 배터리 %를 아직 읽지 않아 연료 표시가 나온다.
 - 저장: `Trip`의 `fuelCostWon`·`isFuelCostEstimated`를 `startBatteryPercent`·`endBatteryPercent`로 바꿨다. Room 버전 1 → 2, 옛 기록은 지우고 새로 만든다(`fallbackToDestructiveMigration`). 설정의 유가 저장 값도 없앴다.
 - 확인: 단위 테스트 64개 통과(연료 L·배터리 사용량 테스트 추가, 유가 테스트 삭제).
+
+## 메모 (15단계에서 정한 것)
+
+- 제출용 APK: `automotive/build/outputs/apk/release/automotive-release.apk` (69.7MB, 저장소에는 넣지 않음). `./gradlew :automotive:assembleRelease`로 다시 만든다.
+- 서명: 키 파일 `C:\Users\M3700X27\keystores\interactive-release.jks`(별칭 `interactive`), 경로·비밀번호는 `C:\Users\M3700X27\.gradle\gradle.properties`의 `INTERACTIVE_*` 값. 둘 다 저장소 밖이다. 키 파일을 잃어버리면 같은 앱으로 업데이트할 수 없으니 따로 백업한다. 서명 확인: apksigner v2 서명, `CN=Interactive`.
+- 디버깅 끔(`isDebuggable = false`), CPU 종류는 `x86_64`·`arm64-v8a`만(`ndk.abiFilters`, 디버그 APK도 같이 줄어듦).
+- **코드 압축(R8)은 껐다**: 켜면 APK가 47.5MB로 줄지만, 앱을 켜자마자 OkHttp가 `IllegalAccessError`로 죽었다(Wipe Data 뒤 새로 설치해서 발견). 시간이 없어 끄는 쪽을 골랐다. 나중에 OkHttp·MapLibre 보존 규칙을 넣어 다시 켜 볼 수 있다.
+- 확인(Wipe Data 뒤 새로 설치, release APK): 처음 실행 때 모드 선택창 → 시연 모드 → 60배 전체 재생(출발·가림·초당동 여행 요약·송정동 "내 땅이 됐어요"·교1동 처음 와본 곳·지도 색 변화)까지 정상, 인터넷 없이 지도 표시(미리 받은 강릉 지도).
+- 측정: 실행 시간 1.5초(`am start -W` TotalTime 1489ms), 메모리 PSS 158MB / RSS 259MB(전체 재생 뒤), 주차 중 CPU 1.6%. 기준(실행 10초, RAM 400MB) 안이다. 주행 중 CPU 5% 기준은 따로 재지 않았다.
+- 데모 영상 원본: `docs/demo/raw/scene1~7-*.mp4`(adb screenrecord, 1280×720). 장면3(0~40초)은 출발·가림·초당동 여행 요약·송정동 영토 카드, 장면4(41~103초)는 송정동 "내 땅이 됐어요"·교1동 "처음 와본 곳이에요"와 10분 뒤 지도 색 변화가 들어 있다(시연 경로 순서가 요청한 장면 순서와 달라서).
+- 알려진 점: 직접 조작 모드에서 기어 D일 때 지도 탭은 카드가 사라지고 "D 주행 중" 칩만 보인다(전체 가림 화면은 나오지 않음).
